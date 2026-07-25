@@ -168,7 +168,7 @@ export function buildDebugProxyCoverageReport() {
 
 export function maybeWarnAboutDebugProxyCoverage(
   settings: DebugProxySettings = resolveDebugProxySettings(),
-  warn: (message: string) => void = (message) => process.stderr.write(`${message}\n`),
+  warn: (message: string) => void = (message) => console.warn(message),
 ): void {
   if (!settings.enabled || !settings.required) {
     return;
