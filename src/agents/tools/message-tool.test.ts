@@ -1665,7 +1665,10 @@ describe("message tool secret scoping", () => {
       actions: ["send"],
       config: {
         listAccountIds: () => ["shared"],
-        resolveAccount: () => ({ enabled: true }),
+        inspectAccount: () => ({ enabled: true }),
+        resolveAccount: () => {
+          throw new Error("unresolved Slack SecretRef");
+        },
       },
     });
     const telegramPlugin = createChannelPlugin({
@@ -1676,6 +1679,7 @@ describe("message tool secret scoping", () => {
       actions: ["send"],
       config: {
         listAccountIds: () => ["shared"],
+        isEnabled: () => false,
         resolveAccount: () => ({ enabled: false }),
       },
     });
@@ -1706,6 +1710,8 @@ describe("message tool secret scoping", () => {
     mockSendResult({ channel: "slack", to: "channel:ops" });
     const tool = createMessageTool({
       config: rawConfig as never,
+      currentChannelProvider: "telegram",
+      currentChannelId: "channel:current",
       getScopedChannelsCommandSecretTargets: mocks.getScopedChannelsCommandSecretTargets as never,
       resolveCommandSecretRefsViaGateway: mocks.resolveCommandSecretRefsViaGateway as never,
       runMessageAction: mocks.runMessageAction as never,
