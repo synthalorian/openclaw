@@ -2,9 +2,24 @@
 // contracts for agent model authentication.
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import lockfile from "proper-lockfile";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AuthStorageBackend } from "./auth-storage.js";
+
+const fileLockMocks = vi.hoisted(() => ({
+  acquireFileLock: vi.fn(),
+  acquireFileLockSync: vi.fn(),
+}));
+
+vi.mock("../../infra/file-lock-manager.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../infra/file-lock-manager.js")>();
+  fileLockMocks.acquireFileLock.mockImplementation(actual.acquireFileLock);
+  fileLockMocks.acquireFileLockSync.mockImplementation(actual.acquireFileLockSync);
+  return {
+    ...actual,
+    acquireFileLock: fileLockMocks.acquireFileLock,
+    acquireFileLockSync: fileLockMocks.acquireFileLockSync,
+  };
+});
 
 // auth-storage.ts persists via the named import `writeFileSync` from node:fs,
 // and replaceFileAtomicSync (in @openclaw/fs-safe) writes its temp file via the
@@ -120,13 +135,91 @@ describe("file auth storage", () => {
     expect(fs.statSync(authPath).mode & 0o777).toBe(0o600);
   });
 
+  it("fails closed on a stale legacy proper-lockfile directory", () => {
+    tmpDir = fs.mkdtempSync(join(tmpdir(), "auth-legacy-lock-"));
+    const authPath = join(tmpDir, "auth.json");
+    fs.writeFileSync(authPath, "{}", "utf8");
+    const legacyLockPath = `${authPath}.lock`;
+    fs.mkdirSync(legacyLockPath);
+    const staleTime = new Date(Date.now() - 60_000);
+    fs.utimesSync(legacyLockPath, staleTime, staleTime);
+    const storage = new FileAuthStorageBackend(authPath);
+
+    expect(() => storage.withLock((current) => ({ result: current }))).toThrow(
+      /requires manual removal/iu,
+    );
+    expect(fs.statSync(legacyLockPath).isDirectory()).toBe(true);
+  });
+
+  it("fails closed on a live legacy proper-lockfile directory", () => {
+    tmpDir = fs.mkdtempSync(join(tmpdir(), "auth-live-legacy-lock-"));
+    const authPath = join(tmpDir, "auth.json");
+    fs.writeFileSync(authPath, "{}", "utf8");
+    const legacyLockPath = `${authPath}.lock`;
+    fs.mkdirSync(legacyLockPath);
+    const storage = new FileAuthStorageBackend(authPath);
+
+    expect(() => storage.withLock(() => ({ result: undefined }))).toThrow(
+      /requires manual removal/iu,
+    );
+    expect(fs.statSync(legacyLockPath).isDirectory()).toBe(true);
+  });
+
   it("propagates async lock release failures", async () => {
     tmpDir = fs.mkdtempSync(join(tmpdir(), "auth-releasefail-"));
     const error = new Error("simulated lock release failure");
-    vi.spyOn(lockfile, "lock").mockResolvedValueOnce(() => Promise.reject(error));
+    fileLockMocks.acquireFileLock.mockResolvedValueOnce({
+      lockPath: join(tmpDir, "auth.json.lock"),
+      normalizedTargetPath: join(tmpDir, "auth.json"),
+      verifyStillHeld: async () => true,
+      release: async () => {
+        throw error;
+      },
+      [Symbol.asyncDispose]: async () => undefined,
+    });
     const storage = new FileAuthStorageBackend(join(tmpDir, "auth.json"));
 
     await expect(storage.withLockAsync(async () => ({ result: undefined }))).rejects.toBe(error);
+  });
+
+  it("fails before writing when the async lock is no longer held", async () => {
+    tmpDir = fs.mkdtempSync(join(tmpdir(), "auth-compromised-"));
+    const release = vi.fn(async () => undefined);
+    fileLockMocks.acquireFileLock.mockResolvedValueOnce({
+      lockPath: join(tmpDir, "auth.json.lock"),
+      normalizedTargetPath: join(tmpDir, "auth.json"),
+      verifyStillHeld: async () => false,
+      release,
+      [Symbol.asyncDispose]: async () => undefined,
+    });
+    const authPath = join(tmpDir, "auth.json");
+    const storage = new FileAuthStorageBackend(authPath);
+
+    await expect(
+      storage.withLockAsync(async () => ({ result: undefined, next: '{"changed":true}' })),
+    ).rejects.toThrow(/lock was compromised/iu);
+    expect(fs.readFileSync(authPath, "utf8")).toBe("{}");
+    expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("fails before writing when the synchronous lock is no longer held", () => {
+    tmpDir = fs.mkdtempSync(join(tmpdir(), "auth-sync-compromised-"));
+    const release = vi.fn();
+    fileLockMocks.acquireFileLockSync.mockReturnValueOnce({
+      lockPath: join(tmpDir, "auth.json.lock"),
+      normalizedTargetPath: join(tmpDir, "auth.json"),
+      verifyStillHeld: () => false,
+      release,
+      [Symbol.dispose]: () => undefined,
+    });
+    const authPath = join(tmpDir, "auth.json");
+    const storage = new FileAuthStorageBackend(authPath);
+
+    expect(() => storage.withLock(() => ({ result: undefined, next: '{"changed":true}' }))).toThrow(
+      /lock was compromised/iu,
+    );
+    expect(fs.readFileSync(authPath, "utf8")).toBe("{}");
+    expect(release).toHaveBeenCalledOnce();
   });
 
   it("throws without changing memory when malformed storage cannot be reloaded", () => {

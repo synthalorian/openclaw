@@ -9,7 +9,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { findEnvKeys, getEnvApiKey } from "@openclaw/ai/internal/runtime";
-import lockfile from "proper-lockfile";
+import { acquireFileLock } from "../../infra/file-lock-manager.js";
 import { replaceFileAtomicSync } from "../../infra/replace-file.js";
 import type {
   OAuthCredentials,
@@ -19,7 +19,12 @@ import type {
 import { getAgentDir } from "../config.js";
 import { getAuthStorageOAuthProviderRegistry } from "./auth-storage-oauth-registry.js";
 import { resolveConfigValue } from "./resolve-config-value.js";
-import { acquireLockSyncWithRetry } from "./storage-lock.js";
+import {
+  acquireStorageLockSyncWithRetry,
+  createStorageLockPayload,
+  prepareStorageLockPathForFsSafe,
+  storageLockOwnerIsStale,
+} from "./storage-lock.js";
 
 export type ApiKeyCredential = {
   type: "api_key";
@@ -101,49 +106,60 @@ export class FileAuthStorageBackend implements AuthStorageBackend {
     this.ensureParentDir();
     this.ensureFileExists();
 
-    const release = acquireLockSyncWithRetry(this.authPath);
+    const lock = acquireStorageLockSyncWithRetry(this.authPath);
     try {
       const current = existsSync(this.authPath) ? readFileSync(this.authPath, "utf-8") : undefined;
       const { result, next } = fn(current);
+      if (!lock.verifyStillHeld()) {
+        throw new Error(`Auth storage lock was compromised: ${lock.lockPath}`);
+      }
       if (next !== undefined) {
         this.replaceAuthFileAtomic(next);
       }
       return result;
     } finally {
-      release();
+      lock.release();
     }
   }
 
   async withLockAsync<T>(fn: (current: string | undefined) => Promise<LockResult<T>>): Promise<T> {
     this.ensureParentDir();
     this.ensureFileExists();
+    prepareStorageLockPathForFsSafe(this.authPath);
 
     let lockCompromisedError: Error | undefined;
-    const release = await lockfile.lock(this.authPath, {
-      retries: {
+    const lock = await acquireFileLock(this.authPath, {
+      retry: {
+        retries: 10,
+        factor: 2,
         minTimeout: 100,
         maxTimeout: 10000,
         randomize: true,
       },
-      stale: 30000,
-      onCompromised: (err) => {
-        lockCompromisedError = err;
+      staleMs: 30_000,
+      staleRecovery: "remove-if-unchanged",
+      payload: createStorageLockPayload,
+      shouldReclaim: ({ payload }) => storageLockOwnerIsStale(payload),
+      shouldRemoveStaleLock: ({ payload }) => storageLockOwnerIsStale(payload),
+      onCompromised: ({ lockPath }) => {
+        lockCompromisedError = new Error(`Auth storage lock was compromised: ${lockPath}`);
       },
+      compromiseCheckIntervalMs: 1_000,
     });
     try {
       const current = existsSync(this.authPath) ? readFileSync(this.authPath, "utf-8") : undefined;
       const { result, next } = await fn(current);
-      if (lockCompromisedError) {
-        throw lockCompromisedError;
+      if (lockCompromisedError || !(await lock.verifyStillHeld())) {
+        throw (
+          lockCompromisedError ?? new Error(`Auth storage lock was compromised: ${lock.lockPath}`)
+        );
       }
       if (next !== undefined) {
         this.replaceAuthFileAtomic(next);
       }
       return result;
     } finally {
-      if (!lockCompromisedError) {
-        await release();
-      }
+      await lock.release();
     }
   }
 }
