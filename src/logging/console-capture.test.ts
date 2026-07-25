@@ -12,6 +12,7 @@ import {
   setLoggerOverride,
 } from "../logging.js";
 import { defaultRuntime } from "../runtime.js";
+import { withEnv } from "../test-utils/env.js";
 import { createSuiteLogPathTracker } from "./log-test-helpers.js";
 import { loggingState } from "./state.js";
 import {
@@ -203,6 +204,49 @@ describe("enableConsoleCapture", () => {
     expect(written).not.toContain(secret);
     expect(String(event.message)).toContain("Authorization: Bearer");
     expect(String(event.stack)).toContain("Authorization: Bearer");
+  });
+
+  it("redacts multiline patterns before JSON escaping in messages and metadata", () => {
+    const configPath = `${tempLogPath()}.json`;
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({
+        logging: { redactPatterns: [String.raw`/sensitive-one\nsensitive-two/g`] },
+      }),
+      "utf8",
+    );
+    setLoggerOverride({
+      level: "silent",
+      consoleLevel: "warn",
+      consoleStyle: "json",
+    });
+    const warn = vi.fn();
+    console.warn = warn;
+
+    withEnv({ OPENCLAW_CONFIG_PATH: configPath }, () => {
+      createSubsystemLogger("sensitive-one\nsensitive-two").warn(
+        "prefix sensitive-one\nsensitive-two suffix",
+        {
+          level: "sensitive-one\nsensitive-two",
+          nested: { detail: "sensitive-one\nsensitive-two" },
+        },
+      );
+    });
+
+    const written = firstMockArgAsString(warn);
+    const event = JSON.parse(written) as {
+      message: string;
+      level: string;
+      subsystem: string;
+      nested: { detail: string };
+    };
+    expect(written).not.toContain("sensitive-one");
+    expect(event.message).not.toContain("sensitive-two");
+    expect(event.level).toBe("warn");
+    expect(event.subsystem).not.toContain("sensitive-one");
+    expect(event.subsystem).not.toContain("sensitive-two");
+    expect(event.nested.detail).not.toContain("sensitive-one");
+    expect(event.nested.detail).not.toContain("sensitive-two");
   });
 
   it("wraps bracket-prefixed root fallback output when console style is JSON", () => {

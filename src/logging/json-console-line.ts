@@ -12,15 +12,19 @@ export function formatJsonConsoleLine(params: {
   subsystem?: string;
   meta?: Record<string, unknown>;
 }): string {
-  return redactSensitiveText(
-    JSON.stringify({
-      time: formatTimestamp(new Date(), { style: "long" }),
-      level: params.level,
-      ...(params.subsystem ? { subsystem: params.subsystem } : {}),
-      message: params.message,
-      ...params.meta,
-    }),
-  );
+  const envelope = {
+    ...params.meta,
+    time: formatTimestamp(new Date(), { style: "long" }),
+    level: params.level,
+    ...(params.subsystem ? { subsystem: params.subsystem } : {}),
+    message: params.message,
+  };
+  const serialized = JSON.stringify(envelope, function (this: unknown, key, value: unknown) {
+    const isStructuralField = this === envelope && (key === "time" || key === "level");
+    return typeof value === "string" && !isStructuralField ? redactSensitiveText(value) : value;
+  });
+  // Retain serialized-object redaction for secret-bearing field names and other structured forms.
+  return redactSensitiveText(serialized);
 }
 
 /** Formats diagnostics that must bypass console capture without bypassing JSON console style. */
