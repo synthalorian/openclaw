@@ -150,7 +150,9 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: focused media-local-roots replacement for the legacy agent-media facade.
       // +1: account-aware channel DM policy setup descriptors.
       // +1: bounded archive extraction and single-entry reads.
-      143,
+      // +1: budgeted root-bounded directory walking.
+      // +1: pinned secret reads and first-writer-wins creation.
+      145,
       env,
     ),
     publicExports: readPluginSdkSurfaceBudgetEnv(
@@ -180,7 +182,9 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +1: native approval messaging target resolver.
       // +1: shared plugin SecretRef setup plan helper.
       // +7: bounded archive extraction, entry reads, errors, and policy types.
-      4730,
+      // +3: root-bounded walk iterator, options, and entry contract.
+      // +5: pinned secret create/read functions and their options contract.
+      4738,
       env,
     ),
     publicFunctionExports: readPluginSdkSurfaceBudgetEnv(
@@ -205,7 +209,9 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
       // +3: channel DM policy factory and its account/patch callbacks.
       // +1: native approval messaging target resolver.
       // +2: bounded archive extraction and single-entry reads.
-      2863,
+      // +1: root-bounded directory walk iterator.
+      // +4: pinned secret create and synchronous/asynchronous reads.
+      2868,
       env,
     ),
     publicDeprecatedExports: readPluginSdkSurfaceBudgetEnv(
@@ -218,7 +224,7 @@ export function readPluginSdkSurfaceBudgets(env = process.env) {
     ),
     publicWildcardReexports: readPluginSdkSurfaceBudgetEnv(
       "OPENCLAW_PLUGIN_SDK_MAX_PUBLIC_WILDCARD_REEXPORTS",
-      83,
+      82,
       env,
     ),
   };
