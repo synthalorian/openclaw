@@ -965,6 +965,12 @@ async function bootstrapCliProxyCaptureAndDispatcher(
 
 export async function runCli(argv: string[] = process.argv) {
   const originalArgv = normalizeWindowsArgv(argv);
+  return await withConsoleLogsRoutedToStderrForJson(originalArgv, () =>
+    runCliWithPreparedOutputMode(originalArgv),
+  );
+}
+
+async function runCliWithPreparedOutputMode(originalArgv: string[]) {
   const startupTrace = createGatewayStartupTrace(originalArgv, "cli.main");
   const earlyProfile = parseCliProfileArgs(originalArgv);
   if (earlyProfile.ok && earlyProfile.profile) {
@@ -1391,12 +1397,10 @@ export async function runCli(argv: string[] = process.argv) {
         const config = await startupTrace.measure("register-plugin-commands", async () => {
           const { registerPluginCliCommandsFromValidatedConfig } =
             await import("../plugins/cli.js");
-          return await withConsoleLogsRoutedToStderrForJson(parseArgv, () =>
-            registerPluginCliCommandsFromValidatedConfig(program, undefined, undefined, {
-              mode: "lazy",
-              primary,
-            }),
-          );
+          return await registerPluginCliCommandsFromValidatedConfig(program, undefined, undefined, {
+            mode: "lazy",
+            primary,
+          });
         });
         if (config) {
           if (

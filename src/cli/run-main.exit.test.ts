@@ -2186,6 +2186,19 @@ describe("runCli exit behavior", () => {
     expect(startProxyMock).toHaveBeenCalledWith(undefined);
   });
 
+  it("routes managed-proxy startup logs away from JSON machine stdout", async () => {
+    tryRouteCliMock.mockResolvedValueOnce(true);
+    startProxyMock.mockImplementationOnce(async () => {
+      expect(loggingState.forceConsoleToStderr).toBe(true);
+      return null;
+    });
+
+    await runCli(["node", "openclaw", "plugins", "marketplace", "list", "--json"]);
+
+    expect(startProxyMock).toHaveBeenCalledWith(undefined);
+    expect(loggingState.forceConsoleToStderr).toBe(false);
+  });
+
   it.each([
     ["fast path", ["node", "openclaw", "gateway", "run"]],
     [
@@ -2470,7 +2483,7 @@ describe("runCli exit behavior", () => {
     expect(parseAsync).toHaveBeenCalledWith(argv);
   });
 
-  it("routes lazy plugin registration logs to stderr only during --json registration", async () => {
+  it("routes incidental logs to stderr throughout --json startup and dispatch", async () => {
     tryRouteCliMock.mockResolvedValueOnce(false);
     resolvePluginCliRootOwnerIdsMock.mockImplementation(
       ({ primaryCommand }: { primaryCommand?: string }) =>
@@ -2499,7 +2512,7 @@ describe("runCli exit behavior", () => {
       { mode: "lazy", primary: "memory" },
     );
     expect(stderrDuringPluginRegistration).toBe(true);
-    expect(stderrDuringParse).toBe(false);
+    expect(stderrDuringParse).toBe(true);
     expect(loggingState.forceConsoleToStderr).toBe(false);
   });
 

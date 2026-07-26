@@ -263,6 +263,35 @@ describe("JSON console style process output", () => {
     expect(output).not.toHaveProperty("message");
   });
 
+  it("keeps managed-proxy startup diagnostics off raw machine stdout", async () => {
+    const result = await runCliProcess({
+      args: ["plugins", "inspect", "browser", "--json"],
+      config: loggingConfig,
+      env: {
+        ALL_PROXY: undefined,
+        HTTP_PROXY: undefined,
+        HTTPS_PROXY: undefined,
+        OPENCLAW_DISABLE_ROUTE_FIRST: "1",
+        OPENCLAW_PROXY_URL: "http://127.0.0.1:9",
+        all_proxy: undefined,
+        http_proxy: undefined,
+        https_proxy: undefined,
+      },
+    });
+
+    const output = JSON.parse(result.stdout) as Record<string, unknown>;
+    expect(output).toHaveProperty("plugin.id", "browser");
+    expect(parseJsonLines(result.stderr)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: "info",
+          subsystem: "proxy",
+          message: expect.stringContaining("routing process HTTP traffic through external proxy"),
+        }),
+      ]),
+    );
+  });
+
   it("keeps typed recommendation machine output as a raw array", async () => {
     const result = await runCliProcess({
       args: ["onboard", "recommendations", "--json"],
