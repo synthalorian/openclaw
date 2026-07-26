@@ -68,6 +68,44 @@ describe("readLoggingConfig", () => {
     });
   });
 
+  it("resolves nested includes and environment substitutions for logging style", () => {
+    const configPath = writeConfig(`{ logging: { $include: "./logging.json5" } }`);
+    fs.writeFileSync(
+      path.join(path.dirname(configPath), "logging.json5"),
+      `{ consoleStyle: "\${OPENCLAW_TEST_CONSOLE_STYLE}", file: "\${MISSING_LOG_FILE}" }`,
+    );
+
+    withEnv(
+      {
+        OPENCLAW_CONFIG_PATH: configPath,
+        OPENCLAW_TEST_CONSOLE_STYLE: "json",
+        MISSING_LOG_FILE: undefined,
+      },
+      () => {
+        expect(readLoggingConfig()).toStrictEqual({ consoleStyle: "json" });
+      },
+    );
+  });
+
+  it("preserves direct logging style when unrelated config resolution fails", () => {
+    const configPath = writeConfig(`{
+      logging: { consoleStyle: "json", file: "\${MISSING_LOG_FILE}" },
+      plugins: { $include: "./missing-plugins.json5" },
+      models: { providers: { demo: { apiKey: "\${MISSING_DEMO_KEY}" } } },
+    }`);
+
+    withEnv(
+      {
+        OPENCLAW_CONFIG_PATH: configPath,
+        MISSING_DEMO_KEY: undefined,
+        MISSING_LOG_FILE: undefined,
+      },
+      () => {
+        expect(readLoggingConfig()).toStrictEqual({ consoleStyle: "json" });
+      },
+    );
+  });
+
   it("returns undefined for missing or malformed config files", () => {
     withEnv(
       { OPENCLAW_CONFIG_PATH: path.join(os.tmpdir(), "openclaw-missing-config.json") },
