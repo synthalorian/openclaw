@@ -95,6 +95,10 @@ if (
     enableOpenClawCompileCache({
       installRoot,
     });
+    if (gatewayEntryStartupTrace.enabled) {
+      const { loadCliDotEnv } = await import("./cli/dotenv.js");
+      loadCliDotEnv({ quiet: true });
+    }
     await configureGatewayStartupTraceConsoleFormatting(gatewayEntryStartupTrace);
     gatewayEntryStartupTrace.mark("bootstrap");
 

@@ -976,7 +976,6 @@ async function runCliWithPreparedOutputMode(originalArgv: string[]) {
   if (earlyProfile.ok && earlyProfile.profile) {
     applyCliProfileEnv({ profile: earlyProfile.profile });
   }
-  await configureGatewayStartupTraceConsoleFormatting(startupTrace);
   const originalInvocation = resolveCliArgvInvocation(originalArgv);
   let consoleCaptureInstalled = false;
   const installConsoleCapture = async () => {
@@ -1043,6 +1042,7 @@ async function runCliWithPreparedOutputMode(originalArgv: string[]) {
       }
     });
   }
+  await configureGatewayStartupTraceConsoleFormatting(startupTrace);
   if (!isHelpOrVersionInvocation && isGatewayRunInvocation) {
     await startupTrace.measure("gateway-run-select-environment", async () => {
       const [{ selectGatewayRunEnvironment }, { defaultRuntime }] = await Promise.all([

@@ -115,13 +115,20 @@ async function runCliProcess(params: {
   allowRespawn?: boolean;
   loggingViaInclude?: boolean;
   loggingViaRootInclude?: boolean;
+  stateEnv?: (stateDir: string) => Record<string, string>;
 }) {
   const fixture = await createHelpProcessFixture(
     params.config,
     params.loggingViaInclude,
     params.loggingViaRootInclude,
   );
-  return await execFileAsync(
+  if (params.stateEnv) {
+    const lines = Object.entries(params.stateEnv(fixture.stateDir)).map(
+      ([key, value]) => `${key}=${value}`,
+    );
+    await fs.writeFile(path.join(fixture.stateDir, ".env"), `${lines.join("\n")}\n`);
+  }
+  const result = await execFileAsync(
     process.execPath,
     [
       ...(params.forbidTlsImport
@@ -157,6 +164,7 @@ async function runCliProcess(params: {
       timeout: CHILD_PROCESS_TIMEOUT_MS,
     },
   );
+  return { ...result, fixture };
 }
 
 function parseJsonLines(stdout: string): Array<Record<string, unknown>> {
@@ -560,6 +568,43 @@ describe("JSON console style process output", () => {
         record.message.includes("startup trace: entry.bootstrap"),
     );
     expect(bootstrapRecords).toHaveLength(2);
+  });
+
+  it("loads dotenv before formatting and caching startup trace logging settings", async () => {
+    const logFileName = "startup-trace.jsonl";
+    const result = await runCliProcess({
+      args: ["gateway", "status"],
+      config: {
+        logging: {
+          consoleLevel: "info",
+          consoleStyle: "${OPENCLAW_TEST_CONSOLE_STYLE}",
+          file: "${OPENCLAW_TEST_LOG_FILE}",
+          level: "info",
+        },
+      },
+      env: {
+        OPENCLAW_GATEWAY_STARTUP_TRACE: "1",
+        OPENCLAW_TEST_CONSOLE_STYLE: undefined,
+        OPENCLAW_TEST_LOG_FILE: undefined,
+      },
+      stateEnv: (stateDir) => ({
+        OPENCLAW_TEST_CONSOLE_STYLE: "json",
+        OPENCLAW_TEST_LOG_FILE: path.join(stateDir, logFileName),
+      }),
+    });
+
+    const records = [...parseJsonLines(result.stdout), ...parseJsonLines(result.stderr)];
+    expect(records).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: "info",
+          message: expect.stringContaining("startup trace: entry.bootstrap"),
+        }),
+      ]),
+    );
+    expect(await fs.readFile(path.join(result.fixture.stateDir, logFileName), "utf8")).toContain(
+      '"message":"Service:',
+    );
   });
 
   it.each([

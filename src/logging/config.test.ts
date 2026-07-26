@@ -127,6 +127,40 @@ describe("readLoggingConfig", () => {
     );
   });
 
+  it("does not cache a partial style while environment-backed fields are unresolved", () => {
+    const configPath = writeConfig(`{
+      logging: {
+        consoleStyle: "json",
+        file: "\${OPENCLAW_TEST_LOG_FILE}",
+        level: "debug",
+      },
+    }`);
+
+    withEnv(
+      {
+        OPENCLAW_CONFIG_PATH: configPath,
+        OPENCLAW_TEST_LOG_FILE: undefined,
+      },
+      () => {
+        expect(readLoggingConfig()).toStrictEqual({ consoleStyle: "json" });
+      },
+    );
+
+    withEnv(
+      {
+        OPENCLAW_CONFIG_PATH: configPath,
+        OPENCLAW_TEST_LOG_FILE: "/tmp/openclaw-env-backed.log",
+      },
+      () => {
+        expect(readLoggingConfig()).toStrictEqual({
+          consoleStyle: "json",
+          file: "/tmp/openclaw-env-backed.log",
+          level: "debug",
+        });
+      },
+    );
+  });
+
   it("returns undefined for missing or malformed config files", () => {
     withEnv(
       { OPENCLAW_CONFIG_PATH: path.join(os.tmpdir(), "openclaw-missing-config.json") },

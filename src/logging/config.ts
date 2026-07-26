@@ -74,7 +74,6 @@ export function readLoggingConfig(): LoggingConfig | undefined {
         });
       } catch {
         const logging = resolveDirectConsoleStyle(directLogging);
-        cachedLoggingConfig = { path: configPath, logging };
         return logging;
       }
     }
@@ -84,7 +83,6 @@ export function readLoggingConfig(): LoggingConfig | undefined {
     } catch {
       const includedLogging = isObjectRecord(includedConfig) ? includedConfig.logging : undefined;
       const logging = resolveDirectConsoleStyle(includedLogging);
-      cachedLoggingConfig = { path: configPath, logging };
       return logging;
     }
     const logging = isObjectRecord(resolvedConfig) ? resolvedConfig.logging : undefined;
