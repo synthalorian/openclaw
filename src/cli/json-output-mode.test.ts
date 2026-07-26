@@ -17,6 +17,7 @@ describe("json output mode", () => {
   it("detects json output flags before argv terminators", () => {
     expect(hasJsonOutputFlag(["node", "openclaw", "nodes", "list", "--json"])).toBe(true);
     expect(hasJsonOutputFlag(["node", "openclaw", "nodes", "list", "--json=true"])).toBe(true);
+    expect(hasJsonOutputFlag(["node", "openclaw", "models", "--status-json"])).toBe(true);
     expect(hasJsonOutputFlag(["node", "openclaw", "nodes", "--", "--json"])).toBe(false);
   });
 

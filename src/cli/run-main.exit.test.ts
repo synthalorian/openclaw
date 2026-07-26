@@ -2186,14 +2186,17 @@ describe("runCli exit behavior", () => {
     expect(startProxyMock).toHaveBeenCalledWith(undefined);
   });
 
-  it("routes managed-proxy startup logs away from JSON machine stdout", async () => {
+  it.each([
+    ["JSON flag", ["node", "openclaw", "plugins", "marketplace", "list", "--json"]],
+    ["models status JSON alias", ["node", "openclaw", "models", "--status-json"]],
+  ])("routes managed-proxy startup logs away for the %s", async (_name, argv) => {
     tryRouteCliMock.mockResolvedValueOnce(true);
     startProxyMock.mockImplementationOnce(async () => {
       expect(loggingState.forceConsoleToStderr).toBe(true);
       return null;
     });
 
-    await runCli(["node", "openclaw", "plugins", "marketplace", "list", "--json"]);
+    await runCli(argv);
 
     expect(startProxyMock).toHaveBeenCalledWith(undefined);
     expect(loggingState.forceConsoleToStderr).toBe(false);

@@ -7,7 +7,12 @@ export function hasJsonOutputFlag(argv: readonly string[]): boolean {
     if (arg === "--") {
       return false;
     }
-    if (arg === "--json" || arg.startsWith("--json=")) {
+    if (
+      arg === "--json" ||
+      arg.startsWith("--json=") ||
+      arg === "--status-json" ||
+      arg.startsWith("--status-json=")
+    ) {
       return true;
     }
   }
