@@ -450,7 +450,26 @@ export class AppSidebarSessionNavigationElement extends AppSidebarBase {
     const roster = this.context?.agents.state.agentsList?.agents ?? [];
     const activeId = this.expandedAgentId();
     const agent = roster.find((entry) => normalizeAgentId(entry.id) === activeId);
-    return { activeId, agent, agents: listSelectableAgents(roster) };
+    const identities = new Map(
+      (this.context?.agentIdentity.entries() ?? []).map((identity) => [
+        normalizeAgentId(identity.agentId),
+        identity,
+      ]),
+    );
+    return {
+      activeId,
+      agent,
+      agents: listSelectableAgents(roster),
+      identity: identities.get(activeId) ?? null,
+      identities,
+    };
+  }
+
+  ensureAgentIdentities(agentIds: readonly string[]): void {
+    if (!this.connected) {
+      return;
+    }
+    void this.context?.agentIdentity.ensure(agentIds);
   }
 
   /** Newest visible session for an agent; the chip menu resumes here. */

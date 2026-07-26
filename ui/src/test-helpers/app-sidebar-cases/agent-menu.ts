@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import { createAgentIdentityCapability } from "../../lib/agents/identity.ts";
 import {
   createGateway,
   createGatewayHarness,
@@ -11,6 +12,41 @@ import {
 import "../../components/app-sidebar.ts";
 
 describe("AppSidebar agent chip", () => {
+  it("loads the workspace identity used by the Agents editor", async () => {
+    const request = vi.fn().mockResolvedValue({
+      agentId: "main",
+      name: "Workspace Molty",
+      emoji: "🦞",
+      avatar: "data:image/png;base64,d29ya3NwYWNl",
+    });
+    const gatewayHarness = createGatewayHarness({ request } as unknown as GatewayBrowserClient);
+    const agentIdentity = createAgentIdentityCapability(gatewayHarness.gateway);
+    const { sidebar } = await mountSidebar(
+      gatewayHarness.gateway,
+      createSessions("main", ["agent:main:main"]),
+      "panel",
+      {
+        defaultId: "main",
+        mainKey: "main",
+        scope: "agent",
+        agents: [{ id: "main" }],
+      },
+      [],
+      agentIdentity,
+    );
+
+    sidebar.connected = true;
+    await vi.waitFor(() => {
+      expect(sidebar.querySelector(".sidebar-agent-card__name")?.textContent?.trim()).toContain(
+        "Workspace Molty",
+      );
+      expect(sidebar.querySelector<HTMLImageElement>(".sidebar-agent-card__avatar img")?.src).toBe(
+        "data:image/png;base64,d29ya3NwYWNl",
+      );
+    });
+    expect(request).toHaveBeenCalledWith("agent.identity.get", { agentId: "main" });
+  });
+
   it("opens the agent-scoped menu with its inline roster", async () => {
     const gatewayHarness = createGatewayHarness({} as GatewayBrowserClient);
     const setSessionKey = vi.fn();

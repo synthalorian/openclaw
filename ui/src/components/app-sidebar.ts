@@ -88,12 +88,17 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
       }
     },
   );
+  private readonly agentIdentitySubscriptions = new SubscriptionsController(this).watch(
+    () => this.context?.agentIdentity,
+    (agentIdentity, notify) => agentIdentity.subscribe(notify),
+  );
 
   @state() catalogProjectGrouping = loadStoredSidebarCatalogGrouping();
 
   constructor() {
     super();
     void this.narrationSubscriptions;
+    void this.agentIdentitySubscriptions;
     void new BoardAvailabilityController(
       this,
       () => {
@@ -145,6 +150,7 @@ class AppSidebar extends AppSidebarSessionNavigationElement implements SessionLi
 
   protected override willUpdate(changed: PropertyValues<this>) {
     super.willUpdate(changed);
+    this.ensureAgentIdentities([this.expandedAgentId()]);
     // A fresh draft must be visible where it will live: genuinely expand a
     // collapsed Threads section (persisted) instead of overriding at render
     // time, so the header toggle keeps matching the visible state.
