@@ -310,6 +310,23 @@ describe("JSON console style process output", () => {
     expect(JSON.parse(result.stdout)).toEqual([]);
   });
 
+  it("keeps models refresh machine output as one raw object", async () => {
+    const result = await runCliProcess({
+      args: ["models", "refresh", "--json"],
+      config: {
+        ...loggingConfig,
+        models: { catalogRefresh: { enabled: false } },
+      },
+    });
+
+    expect(result.stderr).toBe("");
+    expect(JSON.parse(result.stdout)).toEqual({
+      status: "disabled",
+      providers: 0,
+      models: 0,
+    });
+  });
+
   it("structures invalid log-level environment warnings", async () => {
     const result = await runCliProcess({
       args: ["status", "--timeout", "1000"],
