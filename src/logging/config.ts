@@ -7,9 +7,12 @@ import { resolveConfigIncludes } from "../config/includes.js";
 import { resolveConfigPath, resolveIncludeRoots } from "../config/paths.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
+import type { ConsoleStyle } from "./types.js";
 
 // Lightweight logging-config reader used before the full config runtime is safe to load.
-type LoggingConfig = OpenClawConfig["logging"];
+type LoggingConfig = Omit<NonNullable<OpenClawConfig["logging"]>, "consoleStyle"> & {
+  consoleStyle?: ConsoleStyle;
+};
 
 let cachedLoggingConfig:
   | {
