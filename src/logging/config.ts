@@ -7,12 +7,9 @@ import { resolveConfigIncludes } from "../config/includes.js";
 import { resolveConfigPath, resolveIncludeRoots } from "../config/paths.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
-import type { ConsoleStyle } from "./types.js";
 
 // Lightweight logging-config reader used before the full config runtime is safe to load.
-type LoggingConfig = Omit<NonNullable<OpenClawConfig["logging"]>, "consoleStyle"> & {
-  consoleStyle?: ConsoleStyle;
-};
+type LoggingConfig = NonNullable<OpenClawConfig["logging"]>;
 
 let cachedLoggingConfig:
   | {
@@ -30,9 +27,11 @@ function resolveDirectConsoleStyle(logging: unknown): LoggingConfig | undefined 
     return undefined;
   }
   const style = resolved.consoleStyle;
-  return style === "pretty" || style === "compact" || style === "json"
-    ? { consoleStyle: style }
-    : undefined;
+  if (style !== "pretty" && style !== "compact" && style !== "json") {
+    return undefined;
+  }
+  // Runtime/docs support compact even though the generated authored-config type remains narrower.
+  return { consoleStyle: style } as LoggingConfig;
 }
 
 /** Avoids config reads that can mutate or validate config while schema/config commands run. */
