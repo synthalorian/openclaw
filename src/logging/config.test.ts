@@ -106,6 +106,27 @@ describe("readLoggingConfig", () => {
     );
   });
 
+  it("resolves root-included logging when an unrelated sibling include fails", () => {
+    const configPath = writeConfig(`{
+      $include: "./base.json5",
+      plugins: { $include: "./missing-plugins.json5" },
+    }`);
+    fs.writeFileSync(
+      path.join(path.dirname(configPath), "base.json5"),
+      `{ logging: { consoleStyle: "json", file: "\${MISSING_LOG_FILE}" } }`,
+    );
+
+    withEnv(
+      {
+        OPENCLAW_CONFIG_PATH: configPath,
+        MISSING_LOG_FILE: undefined,
+      },
+      () => {
+        expect(readLoggingConfig()).toStrictEqual({ consoleStyle: "json" });
+      },
+    );
+  });
+
   it("returns undefined for missing or malformed config files", () => {
     withEnv(
       { OPENCLAW_CONFIG_PATH: path.join(os.tmpdir(), "openclaw-missing-config.json") },

@@ -27,6 +27,7 @@ const LAZY_GROUP_HELP_CASES = [
 async function createHelpProcessFixture(
   config?: Record<string, unknown>,
   loggingViaInclude = false,
+  loggingViaRootInclude = false,
 ) {
   const root = tempDirs.make("openclaw-help-exit-");
   const stateDir = path.join(root, "state");
@@ -41,7 +42,14 @@ async function createHelpProcessFixture(
   const configWithLoggingInclude = config
     ? { ...config, logging: { $include: "./logging.json5" } }
     : undefined;
-  const writtenConfig = loggingViaInclude ? configWithLoggingInclude : config;
+  const configWithRootLoggingInclude = config
+    ? { $include: "./base.json5", plugins: { $include: "./missing-plugins.json5" } }
+    : undefined;
+  const writtenConfig = loggingViaRootInclude
+    ? configWithRootLoggingInclude
+    : loggingViaInclude
+      ? configWithLoggingInclude
+      : config;
   await fs.writeFile(
     configPath,
     JSON.stringify(writtenConfig ?? { plugins: { entries: { "oc-path": { enabled: true } } } }),
@@ -53,6 +61,13 @@ async function createHelpProcessFixture(
     await fs.writeFile(
       path.join(path.dirname(profileConfigPath), "logging.json5"),
       JSON.stringify(logging),
+    );
+  }
+  if (loggingViaRootInclude) {
+    await fs.writeFile(path.join(stateDir, "base.json5"), JSON.stringify(config ?? {}));
+    await fs.writeFile(
+      path.join(path.dirname(profileConfigPath), "base.json5"),
+      JSON.stringify(config ?? {}),
     );
   }
   await fs.writeFile(
@@ -99,8 +114,13 @@ async function runCliProcess(params: {
   unsupportedRuntime?: boolean;
   allowRespawn?: boolean;
   loggingViaInclude?: boolean;
+  loggingViaRootInclude?: boolean;
 }) {
-  const fixture = await createHelpProcessFixture(params.config, params.loggingViaInclude);
+  const fixture = await createHelpProcessFixture(
+    params.config,
+    params.loggingViaInclude,
+    params.loggingViaRootInclude,
+  );
   return await execFileAsync(
     process.execPath,
     [
@@ -644,6 +664,39 @@ describe("JSON console style process output", () => {
           MISSING_LOG_FILE: undefined,
           OPENCLAW_DISABLE_ROUTE_FIRST: "1",
         },
+      });
+    } catch (error) {
+      failure = error as CliProcessFailure;
+    }
+
+    expect(failure?.code).toBe(1);
+    expect(parseJsonLines(failure?.stderr ?? "")).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          level: "error",
+          message: expect.stringContaining("does not recognize option"),
+        }),
+      ]),
+    );
+  });
+
+  it("structures config validation with root-included logging and a broken sibling include", async () => {
+    let failure: CliProcessFailure | undefined;
+    try {
+      await runCliProcess({
+        args: ["config", "validate", "--definitely-invalid"],
+        config: {
+          ...loggingConfig,
+          logging: {
+            ...loggingConfig.logging,
+            file: "${MISSING_LOG_FILE}",
+          },
+        },
+        env: {
+          MISSING_LOG_FILE: undefined,
+          OPENCLAW_DISABLE_ROUTE_FIRST: "1",
+        },
+        loggingViaRootInclude: true,
       });
     } catch (error) {
       failure = error as CliProcessFailure;

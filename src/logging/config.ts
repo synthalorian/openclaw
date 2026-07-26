@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { isRecord as isObjectRecord } from "@openclaw/normalization-core/record-coerce";
 import { getCommandPathWithRootOptions } from "../cli/argv.js";
 import { resolveConfigEnvVars } from "../config/env-substitution.js";
-import { resolveConfigIncludes } from "../config/includes.js";
+import { resolveConfigIncludes, resolveConfigIncludesForTopLevelKey } from "../config/includes.js";
 import { resolveConfigPath, resolveIncludeRoots } from "../config/paths.js";
 import type { OpenClawConfig } from "../config/types.openclaw.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
@@ -52,29 +52,40 @@ export function readLoggingConfig(): LoggingConfig | undefined {
     }
     const parsed = parseJsonWithJson5Fallback(fs.readFileSync(configPath, "utf8"));
     const allowedRoots = resolveIncludeRoots();
-    let resolvedConfig: unknown;
+    let includedConfig: unknown;
     try {
-      const included = resolveConfigIncludes(parsed, configPath, undefined, { allowedRoots });
-      resolvedConfig = resolveConfigEnvVars(included);
+      includedConfig = resolveConfigIncludesForTopLevelKey(
+        parsed,
+        configPath,
+        "logging",
+        undefined,
+        { allowedRoots },
+      );
     } catch {
       // Validation commands still need a directly-authored logging style when an unrelated
-      // config branch is malformed. Resolve only that subtree through the same canonical rules.
+      // root include is malformed. Resolve only that subtree through the same canonical rules.
       const directLogging = isObjectRecord(parsed) ? parsed.logging : undefined;
       if (directLogging === undefined) {
         return undefined;
       }
-      let included: unknown;
       try {
-        included = resolveConfigIncludes({ logging: directLogging }, configPath, undefined, {
+        includedConfig = resolveConfigIncludes({ logging: directLogging }, configPath, undefined, {
           allowedRoots,
         });
-        resolvedConfig = resolveConfigEnvVars(included);
       } catch {
-        const includedLogging = isObjectRecord(included) ? included.logging : directLogging;
-        const logging = resolveDirectConsoleStyle(includedLogging);
+        const logging = resolveDirectConsoleStyle(directLogging);
         cachedLoggingConfig = { path: configPath, logging };
         return logging;
       }
+    }
+    let resolvedConfig: unknown;
+    try {
+      resolvedConfig = resolveConfigEnvVars(includedConfig);
+    } catch {
+      const includedLogging = isObjectRecord(includedConfig) ? includedConfig.logging : undefined;
+      const logging = resolveDirectConsoleStyle(includedLogging);
+      cachedLoggingConfig = { path: configPath, logging };
+      return logging;
     }
     const logging = isObjectRecord(resolvedConfig) ? resolvedConfig.logging : undefined;
     const resolvedLogging = isObjectRecord(logging) ? (logging as LoggingConfig) : undefined;

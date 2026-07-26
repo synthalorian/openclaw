@@ -12,6 +12,7 @@ import {
   type IncludeResolver,
   resolveConfigIncludeWritePath,
   resolveConfigIncludes,
+  resolveConfigIncludesForTopLevelKey,
 } from "./includes.js";
 
 const ROOT_DIR = path.parse(process.cwd()).root;
@@ -67,6 +68,31 @@ function expectResolveIncludeError(
 }
 
 describe("resolveConfigIncludes", () => {
+  it("projects a top-level key through root includes without resolving malformed siblings", () => {
+    const files = {
+      [configPath("defaults.json")]: {
+        logging: { consoleStyle: "pretty", level: "debug" },
+        plugins: { $include: "./missing-plugins.json" },
+      },
+      [configPath("override.json")]: {
+        logging: { consoleStyle: "json" },
+      },
+    };
+
+    expect(
+      resolveConfigIncludesForTopLevelKey(
+        {
+          $include: ["./defaults.json", "./override.json"],
+          logging: { level: "info" },
+          agents: { $include: "./missing-agents.json" },
+        },
+        DEFAULT_BASE_PATH,
+        "logging",
+        createMockResolver(files),
+      ),
+    ).toEqual({ logging: { consoleStyle: "json", level: "info" } });
+  });
+
   it.each([
     { name: "string", value: "hello", expected: "hello" },
     { name: "number", value: 42, expected: 42 },
