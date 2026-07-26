@@ -3,7 +3,7 @@
 // CLI process entrypoint for OpenClaw command execution.
 import process from "node:process";
 import { fileURLToPath } from "node:url";
-import { isRootHelpInvocation } from "./cli/argv.js";
+import { isRootHelpInvocation, isRootVersionInvocation } from "./cli/argv.js";
 import { parseCliContainerArgs, resolveCliContainerTarget } from "./cli/container-target.js";
 import { runCliWithExitFinalization } from "./cli/one-shot-exit.js";
 import {
@@ -84,6 +84,10 @@ if (
   if (earlyProfile.ok && earlyProfile.profile) {
     applyCliProfileEnv({ profile: earlyProfile.profile });
   }
+  if (!isRootHelpInvocation(process.argv) && !isRootVersionInvocation(process.argv)) {
+    const { loadCliDotEnv } = await import("./cli/dotenv.js");
+    loadCliDotEnv({ quiet: true });
+  }
   const { assertSupportedRuntime } = await import("./infra/runtime-guard.js");
   assertSupportedRuntime();
 
@@ -95,10 +99,6 @@ if (
     enableOpenClawCompileCache({
       installRoot,
     });
-    if (gatewayEntryStartupTrace.enabled) {
-      const { loadCliDotEnv } = await import("./cli/dotenv.js");
-      loadCliDotEnv({ quiet: true });
-    }
     await configureGatewayStartupTraceConsoleFormatting(gatewayEntryStartupTrace);
     gatewayEntryStartupTrace.mark("bootstrap");
 

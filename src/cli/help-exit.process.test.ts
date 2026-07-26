@@ -517,6 +517,33 @@ describe("JSON console style process output", () => {
     );
   });
 
+  it("loads dotenv before formatting entry validation diagnostics", async () => {
+    let failure: CliProcessFailure | undefined;
+    try {
+      await runCliProcess({
+        args: ["--container"],
+        config: {
+          logging: {
+            consoleStyle: "${OPENCLAW_TEST_CONSOLE_STYLE}",
+            level: "silent",
+          },
+        },
+        env: { OPENCLAW_TEST_CONSOLE_STYLE: undefined },
+        stateEnv: () => ({ OPENCLAW_TEST_CONSOLE_STYLE: "json" }),
+      });
+    } catch (error) {
+      failure = error as CliProcessFailure;
+    }
+
+    expect(failure?.code).toBe(2);
+    expect(parseJsonLines(failure?.stderr ?? "")).toEqual([
+      expect.objectContaining({
+        level: "error",
+        message: expect.stringContaining("--container requires a value"),
+      }),
+    ]);
+  });
+
   it.each([
     { name: "default config", args: ["status"], useDefaultConfigPaths: false },
     { name: "named profile", args: ["--profile", "work", "status"], useDefaultConfigPaths: true },
