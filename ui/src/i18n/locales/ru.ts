@@ -41,6 +41,7 @@ export const ru: TranslationMap = {
     unselect: "Снять выбор",
     enabled: "Включено",
     disabled: "Отключено",
+    failed: "Сбой",
     none: "нет",
     na: "н/д",
     never: "никогда",
@@ -599,7 +600,8 @@ export const ru: TranslationMap = {
     worktreeNameInvalid: "Имена рабочих деревьев могут содержать строчные буквы, цифры и дефисы.",
     incognito: "Инкогнито",
     incognitoDescription: "Хранить эту цепочку только до перезапуска Gateway",
-    startAsDraft: "Начать как черновик",
+    draft: "Черновик",
+    draftDescription: "Оставьте эту цепочку для себя, пока не опубликуете её",
     messagePlaceholder: "Над чем должна работать эта сессия?",
     readingAttachment: "Чтение вложения",
     start: "Начать сессию",
@@ -731,6 +733,7 @@ export const ru: TranslationMap = {
     runErrorTimedOut: "Время ожидания истекло",
     runErrorUnknown: "Неизвестная ошибка",
     attentionRequired: "Сессия требует внимания",
+    openSession: "Открыть цепочку",
     model: "Модель",
     provider: "Поставщик",
     runtime: "Среда выполнения",
@@ -1858,6 +1861,7 @@ export const ru: TranslationMap = {
     appearance: "Внешний вид",
     automation: "Автоматизация",
     mcp: "MCP",
+    memory: "Память",
     infrastructure: "Инфраструктура",
     labs: "Лаборатория",
     about: "О себе",
@@ -1895,6 +1899,7 @@ export const ru: TranslationMap = {
     appearance: "Тема, интерфейс и настройки мастера настройки.",
     automation: "Команды, хуки, cron и плагины.",
     mcp: "Серверы MCP, аутентификация, инструменты и диагностика.",
+    memory: "Движок памяти, бэкенд, поиск и режим сновидений.",
     infrastructure: "Настройки шлюза, веба, браузера и медиа.",
     labs: "Экспериментальные возможности агента и инструментов.",
     about: "Control UI и подключенный Gateway формируют идентичность.",
@@ -2167,6 +2172,161 @@ export const ru: TranslationMap = {
     tlsVerifyOff: "проверка TLS отключена",
     mtls: "mTLS",
   },
+  memoryPage: {
+    tablistLabel: "Разделы памяти",
+    tabs: {
+      overview: "Обзор",
+      search: "Поиск",
+      dreaming: "Сновидения",
+    },
+    engine: {
+      title: "Движок",
+      description:
+        "Слотом памяти владеет ровно один плагин памяти. Выбор движка включает его и отключает остальные.",
+      rowTitle: "Движок памяти",
+      off: "Выкл.",
+      autoHint:
+        "В конфигурации не закреплён ни один движок, поэтому слот использует владельца по умолчанию.",
+      explicitHint: "Этот движок закреплён в конфигурации в plugins.slots.memory.",
+      offHint:
+        "Память отключена в конфигурации: для plugins.slots.memory установлено значение none.",
+      catalogUnavailable: "Подключитесь к gateway, чтобы сменить движок памяти.",
+      changeFailed: "Не удалось сменить движок памяти",
+      disabledTitle: "Этот движок отключён",
+      disabledHint:
+        "Слот памяти указывает на этот плагин, но сам плагин отключён, поэтому память не работает.",
+      enable: "Включить",
+    },
+    backend: {
+      title: "Бэкенд",
+      description: "Как память хранится и извлекается для выбранного движка.",
+      rowTitle: "Бэкенд извлечения",
+      builtin: "Встроенный",
+      qmd: "QMD",
+      builtinHint: "Файлы памяти индексируются и ищутся самим OpenClaw.",
+      qmdHint: "Извлечение делегируется QMD. Его настройки показаны ниже.",
+    },
+    addons: {
+      title: "Дополнения",
+      description:
+        "Эти плагины работают поверх движка, а не конкурируют за слот, поэтому любую их комбинацию можно запускать одновременно.",
+      activeMemory: {
+        title: "Активная память",
+      },
+      memoryWiki: {
+        title: "Вики памяти",
+      },
+      stateUnknown: "Неизвестно",
+      manage: "Включение и отключение дополнений",
+      manageLink: "Открыть плагины",
+    },
+    import: {
+      title: "Импорт",
+      description:
+        "Перенос существующей памяти из других ассистентов в рабочее пространство агента.",
+      link: "Открыть импорт памяти",
+    },
+    search: {
+      intro:
+        "Настройки эмбеддинга и извлечения по умолчанию, общие для всех агентов без переопределения памяти.",
+    },
+    dreaming: {
+      intro:
+        "Сновидение выполняется как одно управляемое задание cron для всех рабочих пространств агентов, поэтому эти настройки глобальны. Они принадлежат плагину {plugin}.",
+      schedule: {
+        title: "Расписание",
+        description: "Когда выполняется полный проход и какая модель его сопровождает.",
+      },
+      frequency: {
+        label: "Частота сновидений",
+        help: "Периодичность cron для полного прохода сновидения (лёгкий, REM, затем глубокий). Оставьте пустым для значения плагина по умолчанию.",
+        placeholder: "0 3 * * *",
+      },
+      timezone: {
+        label: "Часовой пояс",
+        help: "Часовой пояс IANA, используемый для интерпретации периодичности cron.",
+        placeholder: "Europe/Vienna",
+      },
+      model: {
+        label: "Модель сновидений",
+        help: "Переопределение провайдера/модели для сопровождения дневника снов. Требует разрешения переопределения моделей субагентов.",
+        placeholder: "anthropic/claude-sonnet-4-6",
+      },
+      verboseLogging: {
+        label: "Подробное журналирование",
+        help: "Подробно логировать каждую фазу сна. Полезно при настройке порогов.",
+      },
+      storage: {
+        title: "Хранилище",
+        description: "Куда записываются повышенные воспоминания и отчёты о сне.",
+        modeLabel: "Режим хранения",
+        modeHelp: "Inline записывает в файл памяти; separate хранит выделенный файл отчёта.",
+        modes: {
+          inline: "Inline",
+          separate: "Separate",
+          both: "Both",
+        },
+        separateReportsLabel: "Отдельные отчёты",
+        separateReportsHelp: "Хранить отчёты о сне вне основного файла памяти.",
+      },
+      phases: {
+        light: {
+          title: "Лёгкая фаза",
+          description:
+            "Дешёвый проход по недавней активности, готовящий кандидатов для воспроизведения.",
+        },
+        deep: {
+          title: "Глубокая фаза",
+          description: "Проход с оценкой, переносящий кратковременные записи в память.",
+        },
+        rem: {
+          title: "Фаза REM",
+          description:
+            "Проход по шаблонам, ищущий повторяющиеся темы в пределах окна ретроспективы.",
+        },
+      },
+      phaseFields: {
+        enabled: "Включено",
+        enabledHelp: "Выполнять эту фазу во время прохода.",
+        lookbackDays: "Дней ретроспективы",
+        lookbackDaysHelp:
+          "Насколько далеко назад читает эта фаза. Оставьте пустым для значения по умолчанию плагина.",
+        limit: "Лимит",
+        limitHelp: "Максимальное число записей, обрабатываемых этой фазой за запуск.",
+        dedupeSimilarity: "Схожесть для дедупликации",
+        dedupeSimilarityHelp: "Схожесть, выше которой два кандидата считаются дубликатами.",
+        minScore: "Минимальная оценка",
+        minScoreHelp: "Оценка продвижения, которую должна достичь запись.",
+        minRecallCount: "Минимум обращений",
+        minRecallCountHelp:
+          "Сколько раз запись должна быть вызвана, прежде чем её можно продвинуть.",
+        minUniqueQueries: "Минимум уникальных запросов",
+        minUniqueQueriesHelp: "Сколько различных запросов должны были обнаружить запись.",
+        recencyHalfLifeDays: "Период полураспада давности (дни)",
+        recencyHalfLifeDaysHelp: "Как быстро более старые сигналы обращений теряют вес.",
+        maxAgeDays: "Максимальный возраст (дни)",
+        maxAgeDaysHelp: "Игнорировать краткосрочные записи старше этого значения.",
+        maxPromotedSnippetTokens: "Макс. токенов продвинутого фрагмента",
+        maxPromotedSnippetTokensHelp:
+          "Бюджет токенов для каждого продвинутого фрагмента. Происхождение сохраняется.",
+        minPatternStrength: "Минимальная сила паттерна",
+        minPatternStrengthHelp:
+          "Сила, которую должен достичь повторяющийся паттерн, чтобы о нём сообщалось.",
+      },
+      agentScope: {
+        title: "Представление агента",
+        description:
+          "Настройки выше глобальные. Дневник снов, краткосрочные счётчики и действия обслуживания ниже относятся к одному агенту.",
+        rowTitle: "Агент",
+      },
+      unsupported: {
+        title: "Настройки сновидений",
+        rowTitle: "Недоступно для этого движка",
+        description:
+          "Плагин {plugin} владеет слотом памяти, и в его схеме конфигурации нет раздела dreaming, поэтому эти настройки нельзя сохранить. Переключите движок на вкладке «Обзор», чтобы отредактировать их.",
+      },
+    },
+  },
   sessionsPage: {
     hubTablistLabel: "Разделы тредов",
   },
@@ -2329,6 +2489,21 @@ export const ru: TranslationMap = {
       description: "Позвольте Code Mode управлять группами субагентов параллельно.",
       empty: "Нет активных swarm.",
       defaultPhase: "Без фазы",
+    },
+    toolSearch: {
+      title: "Поиск инструментов",
+      description:
+        "Держите ограниченный каталог инструментов на виду и откладывайте остальные за поиском, чтобы большие каталоги MCP и плагинов не перегружали промпт.",
+    },
+    localModelLean: {
+      title: "Облегчённые инструменты для локальных моделей",
+      description:
+        "Уберите тяжёлые инструменты по умолчанию, с которыми плохо справляются небольшие локальные модели, оставив более короткий набор, который они смогут надёжно использовать.",
+    },
+    auditMessages: {
+      title: "Метаданные аудита сообщений",
+      description:
+        "Записывайте метаданные без содержимого для личных разговоров в журнале аудита. Содержимое сообщений никогда не сохраняется.",
     },
   },
   aboutPage: {
@@ -3124,6 +3299,7 @@ export const ru: TranslationMap = {
     },
   },
   attention: {
+    cronErrorUnknown: "Неизвестная ошибка",
     cronFailed: "Сбой заданий cron: {count}",
     cronOverdue: "Просрочено заданий cron: {count}",
     modelAuthExpired: "Срок авторизации модели истёк: {providers}",
@@ -3219,13 +3395,17 @@ export const ru: TranslationMap = {
       on: "Dreaming включен",
       off: "Dreaming выключен",
     },
-    restartConfirmation: {
-      title: "Перезапустите Gateway, чтобы применить изменение",
-      subtitle: "Изменение режима Dreaming перезапускает gateway.",
-      warning:
-        "Это действие перезапустит Gateway и может временно прервать чаты, автоматизации и подключенные каналы.",
-      confirm: "Подтвердить перезапуск",
-      restarting: "Перезапуск…",
+    toggleConfirmation: {
+      subtitle: "Dreaming — это глобальная настройка; она не ограничена этим агентом.",
+      enableTitle: "Включить Dreaming для всех агентов",
+      enableDetail:
+        "Ночная проверка dreaming будет выполняться во всех настроенных рабочих пространствах агентов, перенося кратковременные воспоминания в долговременную память. Это применяется сразу.",
+      enableConfirm: "Включить Dreaming",
+      disableTitle: "Выключить Dreaming для всех агентов",
+      disableDetail:
+        "Ночная проверка dreaming остановится для каждого настроенного агента, а не только для этого. Уже записанные воспоминания сохраняются; ничего нового не переносится. Это применяется сразу.",
+      disableConfirm: "Выключить Dreaming",
+      saving: "Сохранение…",
       failed: "Не удалось применить изменение. Проверьте подключение и повторите попытку.",
     },
     status: {
@@ -3885,6 +4065,11 @@ export const ru: TranslationMap = {
     },
     outputTokens: "{count} выходных токенов",
     archivedSessionDisabled: "Восстановите этот сеанс, чтобы отправлять сообщения.",
+    sessionRoute: {
+      chooseTitle: "Выберите сессию",
+      multipleMatches: "Под {shortId} подходит более одной сессии.",
+      additionalMatches: "Остались результаты поиска. Используйте более длинный префикс id.",
+    },
     sessionSharing: {
       menu: "Совместный доступ к потоку",
       current: "Видимость потока: {visibility}",
@@ -3937,6 +4122,15 @@ export const ru: TranslationMap = {
       oneMessage: "{count} сообщение",
       messages: "{count} сообщений",
       activeBranch: "Активная ветка",
+      gatewayPicker: {
+        menuLabel: "Gateway: {gateway}",
+        primaryTag: "основной",
+        setPrimary: "Сделать основным…",
+        openSettings: "Настройки Gateway…",
+        connected: "Подключено",
+        unreachable: "Недоступен",
+        unknown: "Статус неизвестен",
+      },
     },
     board: {
       faceLabel: "Вид ветки",
@@ -4128,7 +4322,9 @@ export const ru: TranslationMap = {
       threads: "Треды",
       groups: "Группы",
       coding: "Программирование",
-      groupCatalogSessionsByProject: "Группировать по проекту",
+      catalogViewOptions: "Параметры отображения",
+      catalogGroupByProject: "Проект",
+      catalogGroupByPerson: "Человек",
       openSessionMenu: "Open session menu",
       sortBy: "Сортировать по",
       sortCreated: "Создано",
@@ -4307,6 +4503,16 @@ export const ru: TranslationMap = {
       renderedMarkdownHint: "Очищенный предпросмотр форматированного текста для быстрого чтения.",
       noPreviewableMarkdown: "Нет содержимого Markdown для предпросмотра.",
       noContent: "Содержимое недоступно",
+    },
+    sidebarColumns: {
+      chat: "Чат",
+      discussion: "Обсуждение",
+      detail: "Сведения",
+      close: "Закрыть {panel}",
+      drag: "Перетащить {panel}",
+      dropOnEmptyLeft: "Переместить {panel} в пустую левую боковую панель",
+      dropOnEmptyRight: "Переместить {panel} в пустую правую боковую панель",
+      resize: "Изменить размер {panel}",
     },
     thread: {
       search: "Поиск сообщений",

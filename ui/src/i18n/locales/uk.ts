@@ -41,6 +41,7 @@ export const uk: TranslationMap = {
     unselect: "Зняти вибір",
     enabled: "Увімкнено",
     disabled: "Вимкнено",
+    failed: "Не пройдено",
     none: "немає",
     na: "н/д",
     never: "never",
@@ -600,7 +601,8 @@ export const uk: TranslationMap = {
     worktreeNameInvalid: "Назви worktree мають містити малі літери, цифри та дефіси.",
     incognito: "Інкогніто",
     incognitoDescription: "Зберігати цей потік лише до перезапуску Gateway",
-    startAsDraft: "Почати як чернетку",
+    draft: "Чернетка",
+    draftDescription: "Тримайте цю гілку при собі, доки не опублікуєте її",
     messagePlaceholder: "Над чим має працювати цей сеанс?",
     readingAttachment: "Читання вкладення",
     start: "Почати сеанс",
@@ -731,6 +733,7 @@ export const uk: TranslationMap = {
     runErrorTimedOut: "Час очікування минув",
     runErrorUnknown: "Невідома помилка",
     attentionRequired: "Сесія потребує уваги",
+    openSession: "Відкрити гілку",
     model: "Модель",
     provider: "Провайдер",
     runtime: "Середовище виконання",
@@ -1854,6 +1857,7 @@ export const uk: TranslationMap = {
     appearance: "Зовнішній вигляд",
     automation: "Автоматизація",
     mcp: "MCP",
+    memory: "Пам'ять",
     infrastructure: "Інфраструктура",
     labs: "Лабораторія",
     about: "Про застосунок",
@@ -1891,6 +1895,7 @@ export const uk: TranslationMap = {
     appearance: "Тема, інтерфейс і налаштування майстра налаштування.",
     automation: "Команди, хуки, cron і плагіни.",
     mcp: "MCP-сервери, автентифікація, інструменти та діагностика.",
+    memory: "Рушій памʼяті, бекенд, пошук і сновидіння.",
     infrastructure: "Налаштування шлюзу, вебу, браузера та медіа.",
     labs: "Експериментальні можливості агента та інструментів.",
     about: "Ідентифікаційні дані збірок Control UI і підключеного Gateway.",
@@ -2163,6 +2168,158 @@ export const uk: TranslationMap = {
     tlsVerifyOff: "перевірку TLS вимкнено",
     mtls: "mTLS",
   },
+  memoryPage: {
+    tablistLabel: "Розділи памʼяті",
+    tabs: {
+      overview: "Огляд",
+      search: "Пошук",
+      dreaming: "Сновидіння",
+    },
+    engine: {
+      title: "Рушій",
+      description:
+        "Рівно один плагін памʼяті володіє слотом памʼяті. Вибір рушія вмикає його та вимикає інші.",
+      rowTitle: "Рушій памʼяті",
+      off: "Вимкнено",
+      autoHint:
+        "У конфігурації не закріплено жодного рушія, тож слот повертається до власника за замовчуванням.",
+      explicitHint: "Цей рушій закріплено в конфігурації під plugins.slots.memory.",
+      offHint: "Памʼять вимкнено в конфігурації: plugins.slots.memory встановлено на none.",
+      catalogUnavailable: "Підключіться до Gateway, щоб змінити рушій памʼяті.",
+      changeFailed: "Не вдалося змінити рушій памʼяті",
+      disabledTitle: "Цей рушій вимкнено",
+      disabledHint:
+        "Слот памʼяті вказує на цей плагін, але сам плагін вимкнено, тож памʼять не працює.",
+      enable: "Увімкніть",
+    },
+    backend: {
+      title: "Бекенд",
+      description: "Як памʼять зберігається та отримується для вибраного рушія.",
+      rowTitle: "Бекенд отримання",
+      builtin: "Вбудований",
+      qmd: "QMD",
+      builtinHint: "Файли памʼяті індексуються та шукаються самим OpenClaw.",
+      qmdHint: "Пошук делегується QMD. Його налаштування наведено нижче.",
+    },
+    addons: {
+      title: "Додатки",
+      description:
+        "Ці плагіни працюють поверх рушія, а не конкурують за слот, тож будь-яка комбінація може працювати одночасно.",
+      activeMemory: {
+        title: "Активна памʼять",
+      },
+      memoryWiki: {
+        title: "Вікі памʼяті",
+      },
+      stateUnknown: "Невідомо",
+      manage: "Увімкнути або вимкнути додатки",
+      manageLink: "Відкрити плагіни",
+    },
+    import: {
+      title: "Імпортувати",
+      description: "Перенесіть наявну памʼять з інших асистентів у робочий простір агента.",
+      link: "Відкрити імпорт памʼяті",
+    },
+    search: {
+      intro:
+        "Типові налаштування вбудовування та пошуку, спільні для кожного агента, який не має власного перевизначення памʼяті.",
+    },
+    dreaming: {
+      intro:
+        "Dreaming виконується як одне кероване cron-завдання для всіх робочих просторів агентів, тож ці налаштування глобальні. Ними керує плагін {plugin}.",
+      schedule: {
+        title: "Розклад",
+        description: "Коли запускається повне сканування та яка модель його озвучує.",
+      },
+      frequency: {
+        label: "Частота dreaming",
+        help: "Cron-каденс для повного сканування dreaming (light, REM, потім deep). Залиште порожнім для типового значення плагіна.",
+        placeholder: "0 3 * * *",
+      },
+      timezone: {
+        label: "Часовий пояс",
+        help: "Часовий пояс IANA, який використовується для інтерпретації cron-каденсу.",
+        placeholder: "Europe/Vienna",
+      },
+      model: {
+        label: "Модель dreaming",
+        help: "Перевизначення провайдера/моделі для озвучення щоденника снів. Потребує дозволу на перевизначення моделей субагентів.",
+        placeholder: "anthropic/claude-sonnet-4-6",
+      },
+      verboseLogging: {
+        label: "Докладне журналювання",
+        help: "Докладно журналювати кожну фазу сну. Корисно під час налаштування порогів.",
+      },
+      storage: {
+        title: "Сховище",
+        description: "Куди записуються підвищені спогади та звіти про сон.",
+        modeLabel: "Режим сховища",
+        modeHelp: "Inline записує у файл пам'яті; separate зберігає окремий файл звіту.",
+        modes: {
+          inline: "Вбудований",
+          separate: "Окремий",
+          both: "Обидва",
+        },
+        separateReportsLabel: "Окремі звіти",
+        separateReportsHelp: "Тримати звіти про сон поза основним файлом пам'яті.",
+      },
+      phases: {
+        light: {
+          title: "Легка фаза",
+          description:
+            "Дешевий прохід за нещодавньою активністю, що готує кандидатів для повторного відтворення.",
+        },
+        deep: {
+          title: "Глибока фаза",
+          description: "Оцінений прохід підвищення, що переводить короткочасні записи у пам'ять.",
+        },
+        rem: {
+          title: "Фаза REM",
+          description: "Прохід за шаблонами, що шукає повторювані теми у вікні огляду.",
+        },
+      },
+      phaseFields: {
+        enabled: "Увімкнено",
+        enabledHelp: "Виконувати цю фазу під час проходу.",
+        lookbackDays: "Днів огляду",
+        lookbackDaysHelp:
+          "Наскільки далеко назад читає ця фаза. Залиште порожнім для значення за замовчуванням плагіна.",
+        limit: "Ліміт",
+        limitHelp: "Максимальна кількість записів, які ця фаза обробляє за один запуск.",
+        dedupeSimilarity: "Схожість для дедуплікації",
+        dedupeSimilarityHelp: "Схожість, вище якої два кандидати вважаються дублікатами.",
+        minScore: "Мінімальна оцінка",
+        minScoreHelp: "Оцінка просування, якої має досягти запис.",
+        minRecallCount: "Мінімум пригадувань",
+        minRecallCountHelp:
+          "Скільки разів запис має бути пригаданий, перш ніж його можна просунути.",
+        minUniqueQueries: "Мінімум унікальних запитів",
+        minUniqueQueriesHelp: "Скільки різних запитів мали виявити запис.",
+        recencyHalfLifeDays: "Період напіврозпаду актуальності (дні)",
+        recencyHalfLifeDaysHelp: "Наскільки швидко старіші сигнали пригадування втрачають вагу.",
+        maxAgeDays: "Максимальний вік (дні)",
+        maxAgeDaysHelp: "Ігнорувати короткострокові записи, старіші за це значення.",
+        maxPromotedSnippetTokens: "Макс. токенів просунутого фрагмента",
+        maxPromotedSnippetTokensHelp:
+          "Бюджет токенів для кожного просунутого фрагмента. Походження зберігається прикріпленим.",
+        minPatternStrength: "Мінімальна сила патерну",
+        minPatternStrengthHelp:
+          "Сила, якої має досягти повторюваний патерн, щоб бути зафіксованим.",
+      },
+      agentScope: {
+        title: "Перегляд агента",
+        description:
+          "Наведені вище налаштування є глобальними. Щоденник снів, короткострокові підрахунки та дії з обслуговування нижче належать одному агенту.",
+        rowTitle: "Агент",
+      },
+      unsupported: {
+        title: "Налаштування снів",
+        rowTitle: "Недоступно для цього рушія",
+        description:
+          "Плагін {plugin} володіє слотом пам’яті, а його схема конфігурації не має розділу снів, тому ці налаштування не можна зберегти. Змініть рушій на вкладці «Огляд», щоб редагувати їх.",
+      },
+    },
+  },
   sessionsPage: {
     hubTablistLabel: "Розділи гілок",
   },
@@ -2323,6 +2480,21 @@ export const uk: TranslationMap = {
       description: "Дозвольте режиму коду керувати групами субагентів паралельно.",
       empty: "Немає активних роїв.",
       defaultPhase: "Без фази",
+    },
+    toolSearch: {
+      title: "Пошук інструментів",
+      description:
+        "Тримайте обмежений каталог інструментів на видноті, а решту відкладайте за пошуком, щоб великі каталоги MCP і плагінів не перевантажували підказку.",
+    },
+    localModelLean: {
+      title: "Спрощені інструменти для локальних моделей",
+      description:
+        "Приберіть громіздкі типові інструменти, з якими менші локальні моделі погано справляються, лишивши коротший набір, який вони можуть надійно використовувати.",
+    },
+    auditMessages: {
+      title: "Метадані аудиту повідомлень",
+      description:
+        "Записуйте метадані без вмісту для прямих розмов у журнал аудиту. Вміст повідомлень ніколи не зберігається.",
     },
   },
   aboutPage: {
@@ -3116,6 +3288,7 @@ export const uk: TranslationMap = {
     },
   },
   attention: {
+    cronErrorUnknown: "Невідома помилка",
     cronFailed: "Невдалі завдання cron: {count}",
     cronOverdue: "Прострочені завдання cron: {count}",
     modelAuthExpired: "Термін автентифікації моделі минув: {providers}",
@@ -3211,14 +3384,18 @@ export const uk: TranslationMap = {
       on: "Сновидіння увімкнено",
       off: "Сновидіння вимкнено",
     },
-    restartConfirmation: {
-      title: "Restart Gateway to Apply Change",
-      subtitle: "Changing Dreaming mode restarts the gateway.",
-      warning:
-        "This action will restart the Gateway and may temporarily interrupt chats, automations, and connected channels.",
-      confirm: "Confirm Restart",
-      restarting: "Restarting…",
-      failed: "Could not apply change. Check your connection and try again.",
+    toggleConfirmation: {
+      subtitle: "Сни — це глобальне налаштування; воно не обмежене цим агентом.",
+      enableTitle: "Увімкнути сни для всіх агентів",
+      enableDetail:
+        "Нічне сканування снів виконуватиметься для кожного налаштованого робочого простору агента, переносячи короткострокові спогади в довгострокову пам’ять. Це набуває чинності одразу.",
+      enableConfirm: "Увімкнути сни",
+      disableTitle: "Вимкнути сни для всіх агентів",
+      disableDetail:
+        "Нічне сканування снів зупиниться для кожного налаштованого агента, а не лише для цього. Уже записані спогади залишаться; нічого нового не переноситиметься. Це набуває чинності одразу.",
+      disableConfirm: "Вимкнути мрії",
+      saving: "Збереження…",
+      failed: "Не вдалося застосувати зміну. Перевірте з'єднання та повторіть спробу.",
     },
     status: {
       active: "Сновидіння активне",
@@ -3865,6 +4042,11 @@ export const uk: TranslationMap = {
     },
     outputTokens: "{count} вихідних токенів",
     archivedSessionDisabled: "Відновіть цей сеанс, щоб надсилати повідомлення.",
+    sessionRoute: {
+      chooseTitle: "Виберіть сесію",
+      multipleMatches: "Більш ніж одна сесія відповідає {shortId}.",
+      additionalMatches: "Залишаються результати пошуку. Використайте довший префікс id.",
+    },
     sessionSharing: {
       menu: "Спільний доступ до потоку",
       current: "Видимість потоку: {visibility}",
@@ -3916,6 +4098,15 @@ export const uk: TranslationMap = {
       oneMessage: "{count} повідомлення",
       messages: "{count} повідомлень",
       activeBranch: "Активна гілка",
+      gatewayPicker: {
+        menuLabel: "Gateway: {gateway}",
+        primaryTag: "основний",
+        setPrimary: "Зробити основним…",
+        openSettings: "Налаштування Gateway…",
+        connected: "Підключено",
+        unreachable: "Недоступний",
+        unknown: "Невідомий статус",
+      },
     },
     board: {
       faceLabel: "Вигляд треду",
@@ -4106,7 +4297,9 @@ export const uk: TranslationMap = {
       threads: "Гілки",
       groups: "Групи",
       coding: "Програмування",
-      groupCatalogSessionsByProject: "Групувати за проєктом",
+      catalogViewOptions: "Параметри перегляду",
+      catalogGroupByProject: "Проєкт",
+      catalogGroupByPerson: "Особа",
       openSessionMenu: "Open session menu",
       sortBy: "Сортувати за",
       sortCreated: "Створено",
@@ -4286,6 +4479,16 @@ export const uk: TranslationMap = {
         "Очищений попередній перегляд форматованого тексту для швидкого читання.",
       noPreviewableMarkdown: "Немає markdown-вмісту для попереднього перегляду.",
       noContent: "Вміст недоступний",
+    },
+    sidebarColumns: {
+      chat: "Чат",
+      discussion: "Обговорення",
+      detail: "Деталі",
+      close: "Закрити {panel}",
+      drag: "Перетягнути {panel}",
+      dropOnEmptyLeft: "Перемістити {panel} на порожню ліву бічну панель",
+      dropOnEmptyRight: "Перемістити {panel} на порожню праву бічну панель",
+      resize: "Змінити розмір {panel}",
     },
     thread: {
       search: "Пошук повідомлень",

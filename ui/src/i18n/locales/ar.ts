@@ -41,6 +41,7 @@ export const ar: TranslationMap = {
     unselect: "إلغاء التحديد",
     enabled: "مفعّل",
     disabled: "معطّل",
+    failed: "فشل",
     none: "لا شيء",
     na: "غير متوفر",
     never: "أبدًا",
@@ -587,7 +588,8 @@ export const ar: TranslationMap = {
     worktreeNameInvalid: "تستخدم أسماء شجرة العمل أحرفًا صغيرة وأرقامًا وشرطات.",
     incognito: "التصفح المتخفي",
     incognitoDescription: "احتفظ بهذه المحادثة حتى إعادة تشغيل Gateway فقط",
-    startAsDraft: "البدء كمسودة",
+    draft: "مسودة",
+    draftDescription: "احتفظ بهذا الموضوع لنفسك حتى تنشره",
     messagePlaceholder: "على ماذا يجب أن تعمل هذه الجلسة؟",
     readingAttachment: "جارٍ قراءة المرفق",
     start: "بدء الجلسة",
@@ -718,6 +720,7 @@ export const ar: TranslationMap = {
     runErrorTimedOut: "انتهت المهلة",
     runErrorUnknown: "خطأ غير معروف",
     attentionRequired: "الجلسة بحاجة إلى انتباه",
+    openSession: "فتح الموضوع",
     model: "النموذج",
     provider: "المزود",
     runtime: "وقت التشغيل",
@@ -1826,6 +1829,7 @@ export const ar: TranslationMap = {
     appearance: "المظهر",
     automation: "الأتمتة",
     mcp: "MCP",
+    memory: "الذاكرة",
     infrastructure: "البنية التحتية",
     labs: "المختبرات",
     about: "حول",
@@ -1862,6 +1866,7 @@ export const ar: TranslationMap = {
     appearance: "السمة، وواجهة المستخدم، وإعدادات معالج الإعداد.",
     automation: "الأوامر، والخطافات، وcron، والمكونات الإضافية.",
     mcp: "خوادم MCP، والمصادقة، والأدوات، والتشخيصات.",
+    memory: "محرك الذاكرة، والخلفية، والبحث، والحلم.",
     infrastructure: "إعدادات Gateway، والويب، والمتصفح، والوسائط.",
     labs: "قدرات تجريبية للوكيل والأدوات.",
     about: "هوية بناء Control UI وGateway المتصل.",
@@ -2126,6 +2131,152 @@ export const ar: TranslationMap = {
     tlsVerifyOff: "التحقق من TLS متوقف",
     mtls: "mTLS",
   },
+  memoryPage: {
+    tablistLabel: "أقسام الذاكرة",
+    tabs: {
+      overview: "نظرة عامة",
+      search: "بحث",
+      dreaming: "الحلم",
+    },
+    engine: {
+      title: "المحرك",
+      description:
+        "يمتلك مكوّن إضافي واحد فقط للذاكرة فتحة الذاكرة. اختيار محرك يُفعّله ويُعطّل الآخرين.",
+      rowTitle: "محرك الذاكرة",
+      off: "إيقاف",
+      autoHint: "لم يُثبَّت أي محرك في الإعدادات، لذا تعود الفتحة إلى مالكها الافتراضي.",
+      explicitHint: "هذا المحرك مثبّت في الإعدادات ضمن plugins.slots.memory.",
+      offHint: "الذاكرة مُوقّفة في الإعدادات: تم ضبط plugins.slots.memory على none.",
+      catalogUnavailable: "اتصل بالـ Gateway لتغيير محرك الذاكرة.",
+      changeFailed: "تعذّر تغيير محرك الذاكرة",
+      disabledTitle: "هذا المحرك مُعطّل",
+      disabledHint:
+        "تشير فتحة الذاكرة إلى هذا المكوّن الإضافي، لكن المكوّن نفسه مُعطّل، لذا لا تعمل الذاكرة.",
+      enable: "فعّل",
+    },
+    backend: {
+      title: "الخلفية",
+      description: "كيفية تخزين الذاكرة واستردادها للمحرك المحدد.",
+      rowTitle: "خلفية الاسترداد",
+      builtin: "مدمج",
+      qmd: "QMD",
+      builtinHint: "تتم فهرسة ملفات الذاكرة والبحث فيها بواسطة OpenClaw نفسه.",
+      qmdHint: "يتم تفويض الاسترجاع إلى QMD. تظهر إعداداته أدناه.",
+    },
+    addons: {
+      title: "الإضافات",
+      description:
+        "تعمل هذه المكوّنات الإضافية فوق المحرّك بدلاً من التنافس على الفتحة، لذا يمكن تشغيل أي مجموعة منها في وقت واحد.",
+      activeMemory: {
+        title: "الذاكرة النشطة",
+      },
+      memoryWiki: {
+        title: "ويكي الذاكرة",
+      },
+      stateUnknown: "غير معروف",
+      manage: "تمكين أو تعطيل الإضافات",
+      manageLink: "فتح الإضافات",
+    },
+    import: {
+      title: "استيراد",
+      description: "أحضر الذاكرة الموجودة من مساعدين آخرين إلى مساحة عمل الوكيل.",
+      link: "فتح استيراد الذاكرة",
+    },
+    search: {
+      intro: "الإعدادات الافتراضية للتضمين والاسترجاع المشتركة بين كل وكيل ليس لديه تجاوز للذاكرة.",
+    },
+    dreaming: {
+      intro:
+        "يعمل الحلم كمهمة cron مُدارة واحدة عبر كل مساحة عمل للوكيل، لذا فإن هذه الإعدادات عامة. وهي مملوكة للمكوّن الإضافي {plugin}.",
+      schedule: {
+        title: "الجدولة",
+        description: "متى يتم تشغيل المسح الكامل وأي نموذج يرويه.",
+      },
+      frequency: {
+        label: "تكرار الحلم",
+        help: "إيقاع cron لمسح الحلم الكامل (خفيف، REM، ثم عميق). اتركه فارغاً للقيمة الافتراضية للمكوّن الإضافي.",
+        placeholder: "0 3 * * *",
+      },
+      timezone: {
+        label: "المنطقة الزمنية",
+        help: "المنطقة الزمنية IANA المستخدمة لتفسير إيقاع cron.",
+        placeholder: "Europe/Vienna",
+      },
+      model: {
+        label: "نموذج الحلم",
+        help: "تجاوز المزوّد/النموذج لرواية مذكرات الحلم. يتطلب السماح بتجاوزات نموذج الوكيل الفرعي.",
+        placeholder: "anthropic/claude-sonnet-4-6",
+      },
+      verboseLogging: {
+        label: "تسجيل مُفصّل",
+        help: "تسجيل كل مرحلة من مراحل الحلم بالتفصيل. مفيد عند ضبط العتبات.",
+      },
+      storage: {
+        title: "التخزين",
+        description: "المكان الذي تُكتب فيه الذكريات المُرقّاة وتقارير الحلم.",
+        modeLabel: "وضع التخزين",
+        modeHelp: "الوضع المُضمّن يكتب داخل ملف الذاكرة؛ الوضع المنفصل يحتفظ بملف تقرير مخصّص.",
+        modes: {
+          inline: "مُضمّن",
+          separate: "منفصل",
+          both: "كلاهما",
+        },
+        separateReportsLabel: "تقارير منفصلة",
+        separateReportsHelp: "إبقاء تقارير الحلم خارج ملف الذاكرة الرئيسي.",
+      },
+      phases: {
+        light: {
+          title: "المرحلة الخفيفة",
+          description: "تمريرة رخيصة للنشاط الأخير تُهيّئ مرشّحي الإعادة.",
+        },
+        deep: {
+          title: "المرحلة العميقة",
+          description: "تمريرة ترقية مُقيّمة تنقل الإدخالات قصيرة المدى إلى الذاكرة.",
+        },
+        rem: {
+          title: "مرحلة REM",
+          description: "تمريرة أنماط تبحث عن المواضيع المتكرّرة عبر نافذة الاستعادة.",
+        },
+      },
+      phaseFields: {
+        enabled: "مفعّل",
+        enabledHelp: "تشغيل هذه المرحلة أثناء المسح.",
+        lookbackDays: "أيام الاستعادة",
+        lookbackDaysHelp:
+          "مدى رجوع هذه المرحلة في القراءة. اتركه فارغًا لاستخدام الإعداد الافتراضي للإضافة.",
+        limit: "الحد",
+        limitHelp: "الحد الأقصى للإدخالات التي تعالجها هذه المرحلة في كل تشغيل.",
+        dedupeSimilarity: "تشابه إزالة التكرار",
+        dedupeSimilarityHelp: "التشابه الذي يُعامَل عنده مرشحان على أنهما مكرران.",
+        minScore: "الحد الأدنى للدرجة",
+        minScoreHelp: "درجة الترقية التي يجب أن يصل إليها الإدخال.",
+        minRecallCount: "الحد الأدنى للاسترجاعات",
+        minRecallCountHelp: "عدد مرات استرجاع الإدخال قبل أن يمكن ترقيته.",
+        minUniqueQueries: "الحد الأدنى للاستعلامات الفريدة",
+        minUniqueQueriesHelp: "عدد الاستعلامات المختلفة التي يجب أن تكون قد أظهرت الإدخال.",
+        recencyHalfLifeDays: "نصف عمر الحداثة (أيام)",
+        recencyHalfLifeDaysHelp: "مدى سرعة فقدان إشارات الاسترجاع الأقدم لوزنها.",
+        maxAgeDays: "الحد الأقصى للعمر (أيام)",
+        maxAgeDaysHelp: "تجاهل الإدخالات قصيرة الأجل الأقدم من هذا.",
+        maxPromotedSnippetTokens: "الحد الأقصى لرموز المقتطف المرقّى",
+        maxPromotedSnippetTokensHelp: "ميزانية الرموز لكل مقتطف مرقّى. يبقى المصدر مرفقًا.",
+        minPatternStrength: "الحد الأدنى لقوة النمط",
+        minPatternStrengthHelp: "القوة التي يجب أن يصل إليها النمط المتكرر ليتم الإبلاغ عنه.",
+      },
+      agentScope: {
+        title: "عرض الوكيل",
+        description:
+          "الإعدادات أعلاه عامة. أما مذكرات الأحلام والأعداد قصيرة الأمد وإجراءات الصيانة أدناه فتخص وكيلًا واحدًا.",
+        rowTitle: "الوكيل",
+      },
+      unsupported: {
+        title: "إعدادات الأحلام",
+        rowTitle: "غير متاح لهذا المحرك",
+        description:
+          "يملك المكوّن الإضافي {plugin} خانة الذاكرة، ولا يحتوي مخطط إعداده على قسم للأحلام، لذا لا يمكن تخزين هذه الإعدادات. بدّل المحرك في علامة التبويب نظرة عامة لتحريرها.",
+      },
+    },
+  },
   sessionsPage: {
     hubTablistLabel: "أقسام المحادثات",
   },
@@ -2279,6 +2430,21 @@ export const ar: TranslationMap = {
       description: "دع وضع الشيفرة ينسّق مجموعات من الوكلاء الفرعيين على التوازي.",
       empty: "لا توجد أسراب نشطة.",
       defaultPhase: "بلا مرحلة",
+    },
+    toolSearch: {
+      title: "بحث الأدوات",
+      description:
+        "أبقِ دليل أدوات محدودًا مرئيًا وأجّل البقية خلف البحث، حتى تتوقف كتالوجات MCP والمكوّنات الإضافية الكبيرة عن ازدحام الموجه.",
+    },
+    localModelLean: {
+      title: "أدوات مبسّطة للنماذج المحلية",
+      description:
+        "استبعد الأدوات الافتراضية الثقيلة التي تتعامل معها النماذج المحلية الأصغر بشكل ضعيف، مع ترك مجموعة أقصر يمكنها استخدامها بموثوقية.",
+    },
+    auditMessages: {
+      title: "بيانات وصفية لتدقيق الرسائل",
+      description:
+        "سجّل بيانات وصفية خالية من المحتوى للمحادثات المباشرة في سجل التدقيق. لا يتم تخزين محتوى الرسائل أبدًا.",
     },
   },
   aboutPage: {
@@ -3069,6 +3235,7 @@ export const ar: TranslationMap = {
     },
   },
   attention: {
+    cronErrorUnknown: "خطأ غير معروف",
     cronFailed: "فشل عدد {count} من مهام cron",
     cronOverdue: "تأخر عدد {count} من مهام cron",
     modelAuthExpired: "انتهت صلاحية مصادقة النموذج: {providers}",
@@ -3164,14 +3331,18 @@ export const ar: TranslationMap = {
       on: "الحلم مفعّل",
       off: "الحلم متوقف",
     },
-    restartConfirmation: {
-      title: "أعد تشغيل Gateway لتطبيق التغيير",
-      subtitle: "يؤدي تغيير وضع الحلم إلى إعادة تشغيل Gateway.",
-      warning:
-        "سيؤدي هذا الإجراء إلى إعادة تشغيل Gateway وقد يقطع مؤقتًا الدردشات، والأتمتة، والقنوات المتصلة.",
-      confirm: "تأكيد إعادة التشغيل",
-      restarting: "جارٍ إعادة التشغيل…",
-      failed: "تعذر تطبيق التغيير. تحقق من اتصالك وحاول مرة أخرى.",
+    toggleConfirmation: {
+      subtitle: "الأحلام إعداد عام؛ فهي ليست مقصورة على هذا الوكيل.",
+      enableTitle: "تشغيل الأحلام لجميع الوكلاء",
+      enableDetail:
+        "سيتم تشغيل مسح الأحلام الليلي عبر كل مساحة عمل وكيل مُعدَّة، مُرقِّيًا الاستذكارات قصيرة الأمد إلى ذاكرة طويلة الأمد. يُطبّق هذا فورًا.",
+      enableConfirm: "تشغيل الأحلام",
+      disableTitle: "إيقاف الأحلام لجميع الوكلاء",
+      disableDetail:
+        "سيتوقف مسح الأحلام الليلي لكل وكيل مُعدَّ، وليس هذا الوكيل فقط. تبقى الذكريات المكتوبة بالفعل؛ ولا يتم ترقية أي شيء جديد. يُطبّق هذا فورًا.",
+      disableConfirm: "إيقاف تشغيل الحلم",
+      saving: "جارٍ الحفظ…",
+      failed: "تعذّر تطبيق التغيير. تحقق من اتصالك وحاول مرة أخرى.",
     },
     status: {
       active: "الحلم نشط",
@@ -3808,6 +3979,11 @@ export const ar: TranslationMap = {
     },
     outputTokens: "{count} رمز إخراج",
     archivedSessionDisabled: "استعِد هذه الجلسة لإرسال الرسائل.",
+    sessionRoute: {
+      chooseTitle: "اختر جلسة",
+      multipleMatches: "توجد أكثر من جلسة تطابق {shortId}.",
+      additionalMatches: "لا تزال هناك نتائج بحث. استخدم بادئة معرّف أطول.",
+    },
     sessionSharing: {
       menu: "مشاركة المسار",
       current: "رؤية المسار: {visibility}",
@@ -3859,6 +4035,15 @@ export const ar: TranslationMap = {
       oneMessage: "{count} رسالة",
       messages: "{count} رسالة",
       activeBranch: "الفرع النشط",
+      gatewayPicker: {
+        menuLabel: "Gateway: {gateway}",
+        primaryTag: "أساسي",
+        setPrimary: "تعيين كأساسي…",
+        openSettings: "إعدادات Gateway…",
+        connected: "متصل",
+        unreachable: "غير قابل للوصول",
+        unknown: "حالة غير معروفة",
+      },
     },
     board: {
       faceLabel: "واجهة المحادثة",
@@ -4049,7 +4234,9 @@ export const ar: TranslationMap = {
       threads: "المحادثات",
       groups: "المجموعات",
       coding: "البرمجة",
-      groupCatalogSessionsByProject: "التجميع حسب المشروع",
+      catalogViewOptions: "خيارات العرض",
+      catalogGroupByProject: "مشروع",
+      catalogGroupByPerson: "شخص",
       openSessionMenu: "Open session menu",
       sortBy: "ترتيب حسب",
       sortCreated: "تاريخ الإنشاء",
@@ -4228,6 +4415,16 @@ export const ar: TranslationMap = {
       renderedMarkdownHint: "معاينة منقّحة للنص المنسّق لقراءته بسرعة.",
       noPreviewableMarkdown: "لا يوجد محتوى Markdown قابل للمعاينة.",
       noContent: "لا يتوفر محتوى",
+    },
+    sidebarColumns: {
+      chat: "المحادثة",
+      discussion: "المناقشة",
+      detail: "التفاصيل",
+      close: "إغلاق {panel}",
+      drag: "سحب {panel}",
+      dropOnEmptyLeft: "نقل {panel} إلى الشريط الجانبي الأيسر الفارغ",
+      dropOnEmptyRight: "نقل {panel} إلى الشريط الجانبي الأيمن الفارغ",
+      resize: "تغيير حجم {panel}",
     },
     thread: {
       search: "البحث في الرسائل",

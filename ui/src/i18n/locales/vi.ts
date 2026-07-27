@@ -41,6 +41,7 @@ export const vi: TranslationMap = {
     unselect: "Bỏ chọn",
     enabled: "Đã bật",
     disabled: "Đã tắt",
+    failed: "Không đạt",
     none: "không có",
     na: "n/a",
     never: "không bao giờ",
@@ -597,7 +598,8 @@ export const vi: TranslationMap = {
     worktreeNameInvalid: "Tên worktree dùng chữ cái viết thường, chữ số và dấu gạch nối.",
     incognito: "Ẩn danh",
     incognitoDescription: "Chỉ giữ chuỗi hội thoại này cho đến khi Gateway khởi động lại",
-    startAsDraft: "Bắt đầu ở dạng bản nháp",
+    draft: "Bản nháp",
+    draftDescription: "Giữ chuỗi này riêng tư cho đến khi bạn xuất bản nó",
     messagePlaceholder: "Phiên này nên làm việc gì?",
     readingAttachment: "Đang đọc tệp đính kèm",
     start: "Bắt đầu phiên",
@@ -728,6 +730,7 @@ export const vi: TranslationMap = {
     runErrorTimedOut: "Đã hết thời gian chờ",
     runErrorUnknown: "Lỗi không xác định",
     attentionRequired: "Phiên cần chú ý",
+    openSession: "Mở chuỗi",
     model: "Mô hình",
     provider: "Nhà cung cấp",
     runtime: "Runtime",
@@ -1845,6 +1848,7 @@ export const vi: TranslationMap = {
     appearance: "Giao diện",
     automation: "Tự động hóa",
     mcp: "MCP",
+    memory: "Bộ nhớ",
     infrastructure: "Hạ tầng",
     labs: "Labs",
     about: "Giới thiệu",
@@ -1882,6 +1886,7 @@ export const vi: TranslationMap = {
     appearance: "Giao diện, UI và cài đặt trình hướng dẫn thiết lập.",
     automation: "Lệnh, hook, cron và plugin.",
     mcp: "Máy chủ MCP, xác thực, công cụ và chẩn đoán.",
+    memory: "Công cụ bộ nhớ, backend, tìm kiếm và mơ.",
     infrastructure: "Cài đặt Gateway, web, trình duyệt và phương tiện.",
     labs: "Khả năng thử nghiệm của agent và công cụ.",
     about: "Control UI và Gateway đã kết nối tạo danh tính bản dựng.",
@@ -2152,6 +2157,158 @@ export const vi: TranslationMap = {
     tlsVerifyOff: "TLS verify tắt",
     mtls: "mTLS",
   },
+  memoryPage: {
+    tablistLabel: "Các mục bộ nhớ",
+    tabs: {
+      overview: "Tổng quan",
+      search: "Tìm kiếm",
+      dreaming: "Đang mơ",
+    },
+    engine: {
+      title: "Công cụ",
+      description:
+        "Chỉ đúng một plugin bộ nhớ sở hữu vị trí bộ nhớ. Việc chọn một công cụ sẽ bật nó và tắt các công cụ khác.",
+      rowTitle: "Công cụ bộ nhớ",
+      off: "Tắt",
+      autoHint:
+        "Không có công cụ nào được ghim trong cấu hình, vì vậy vị trí sẽ quay về chủ sở hữu mặc định.",
+      explicitHint: "Công cụ này được ghim trong cấu hình dưới plugins.slots.memory.",
+      offHint: "Bộ nhớ đã bị tắt trong cấu hình: plugins.slots.memory được đặt thành none.",
+      catalogUnavailable: "Kết nối tới gateway để thay đổi công cụ bộ nhớ.",
+      changeFailed: "Không thể thay đổi công cụ bộ nhớ",
+      disabledTitle: "Công cụ này đã bị tắt",
+      disabledHint:
+        "Vị trí bộ nhớ trỏ tới plugin này, nhưng bản thân plugin đã bị tắt, nên bộ nhớ không chạy.",
+      enable: "Bật",
+    },
+    backend: {
+      title: "Backend",
+      description: "Cách bộ nhớ được lưu trữ và truy xuất cho công cụ đã chọn.",
+      rowTitle: "Backend truy xuất",
+      builtin: "Tích hợp sẵn",
+      qmd: "QMD",
+      builtinHint: "Các tệp bộ nhớ được lập chỉ mục và tìm kiếm bởi chính OpenClaw.",
+      qmdHint: "Việc truy xuất được ủy thác cho QMD. Cài đặt của nó xuất hiện bên dưới.",
+    },
+    addons: {
+      title: "Tiện ích bổ sung",
+      description:
+        "Các plugin này xếp chồng lên trên engine thay vì cạnh tranh cho vị trí, vì vậy bất kỳ tổ hợp nào cũng có thể chạy cùng lúc.",
+      activeMemory: {
+        title: "Bộ nhớ hoạt động",
+      },
+      memoryWiki: {
+        title: "Wiki bộ nhớ",
+      },
+      stateUnknown: "Không xác định",
+      manage: "Bật hoặc tắt tiện ích bổ sung",
+      manageLink: "Mở Plugins",
+    },
+    import: {
+      title: "Nhập",
+      description: "Đưa bộ nhớ hiện có từ các trợ lý khác vào không gian làm việc của agent.",
+      link: "Mở Nhập Bộ nhớ",
+    },
+    search: {
+      intro:
+        "Các giá trị mặc định về embedding và truy xuất được chia sẻ bởi mọi agent không có ghi đè bộ nhớ.",
+    },
+    dreaming: {
+      intro:
+        "Dreaming chạy như một tác vụ cron được quản lý trên mọi không gian làm việc của agent, vì vậy các cài đặt này là toàn cục. Chúng thuộc quyền sở hữu của plugin {plugin}.",
+      schedule: {
+        title: "Lịch trình",
+        description: "Khi nào quá trình quét toàn bộ chạy và mô hình nào tường thuật nó.",
+      },
+      frequency: {
+        label: "Tần suất dreaming",
+        help: "Nhịp cron cho quá trình quét dreaming toàn bộ (light, REM, rồi deep). Để trống để dùng mặc định của plugin.",
+        placeholder: "0 3 * * *",
+      },
+      timezone: {
+        label: "Múi giờ",
+        help: "Múi giờ IANA được dùng để diễn giải nhịp cron.",
+        placeholder: "Europe/Vienna",
+      },
+      model: {
+        label: "Mô hình dreaming",
+        help: "Ghi đè provider/model cho việc tường thuật nhật ký giấc mơ. Yêu cầu cho phép ghi đè model của subagent.",
+        placeholder: "anthropic/claude-sonnet-4-6",
+      },
+      verboseLogging: {
+        label: "Ghi log chi tiết",
+        help: "Ghi log chi tiết từng giai đoạn dreaming. Hữu ích khi tinh chỉnh ngưỡng.",
+      },
+      storage: {
+        title: "Lưu trữ",
+        description: "Nơi ghi các bộ nhớ được thăng cấp và báo cáo dreaming.",
+        modeLabel: "Chế độ lưu trữ",
+        modeHelp: "Inline ghi vào file bộ nhớ; separate giữ một file báo cáo riêng.",
+        modes: {
+          inline: "Inline",
+          separate: "Riêng biệt",
+          both: "Cả hai",
+        },
+        separateReportsLabel: "Báo cáo riêng",
+        separateReportsHelp: "Giữ báo cáo dreaming tách khỏi file bộ nhớ chính.",
+      },
+      phases: {
+        light: {
+          title: "Giai đoạn Light",
+          description:
+            "Lượt quét hoạt động gần đây với chi phí thấp, chuẩn bị các ứng viên replay.",
+        },
+        deep: {
+          title: "Giai đoạn Deep",
+          description: "Lượt thăng cấp có chấm điểm, chuyển các mục ngắn hạn vào bộ nhớ.",
+        },
+        rem: {
+          title: "Giai đoạn REM",
+          description: "Lượt tìm mẫu để phát hiện các chủ đề lặp lại trong cửa sổ nhìn lại.",
+        },
+      },
+      phaseFields: {
+        enabled: "Đã bật",
+        enabledHelp: "Chạy giai đoạn này trong lượt quét.",
+        lookbackDays: "Số ngày nhìn lại",
+        lookbackDaysHelp:
+          "Giai đoạn này đọc lại bao xa về trước. Để trống để dùng mặc định của plugin.",
+        limit: "Giới hạn",
+        limitHelp: "Số mục tối đa mà giai đoạn này xử lý mỗi lần chạy.",
+        dedupeSimilarity: "Độ tương đồng khử trùng lặp",
+        dedupeSimilarityHelp:
+          "Độ tương đồng vượt ngưỡng này thì hai ứng viên được coi là trùng lặp.",
+        minScore: "Điểm tối thiểu",
+        minScoreHelp: "Điểm thăng cấp mà một mục phải đạt được.",
+        minRecallCount: "Số lần gọi lại tối thiểu",
+        minRecallCountHelp:
+          "Một mục phải được gọi lại bao nhiêu lần trước khi có thể được thăng cấp.",
+        minUniqueQueries: "Số truy vấn duy nhất tối thiểu",
+        minUniqueQueriesHelp: "Bao nhiêu truy vấn khác biệt phải làm nổi lên mục này.",
+        recencyHalfLifeDays: "Chu kỳ bán rã theo độ mới (ngày)",
+        recencyHalfLifeDaysHelp: "Tín hiệu gọi lại cũ hơn mất trọng số nhanh như thế nào.",
+        maxAgeDays: "Tuổi tối đa (ngày)",
+        maxAgeDaysHelp: "Bỏ qua các mục ngắn hạn cũ hơn khoảng này.",
+        maxPromotedSnippetTokens: "Token tối đa cho đoạn được thăng cấp",
+        maxPromotedSnippetTokensHelp:
+          "Ngân sách token cho mỗi đoạn được thăng cấp. Nguồn gốc vẫn được đính kèm.",
+        minPatternStrength: "Độ mạnh mẫu tối thiểu",
+        minPatternStrengthHelp: "Độ mạnh mà một mẫu lặp lại phải đạt được để được báo cáo.",
+      },
+      agentScope: {
+        title: "Chế độ xem tác nhân",
+        description:
+          "Các cài đặt phía trên là toàn cục. Nhật ký giấc mơ, số lượng ngắn hạn và các thao tác bảo trì bên dưới thuộc về một agent.",
+        rowTitle: "Tác nhân",
+      },
+      unsupported: {
+        title: "Cài đặt mơ",
+        rowTitle: "Không khả dụng cho engine này",
+        description:
+          "Plugin {plugin} sở hữu ô nhớ và lược đồ cấu hình của nó không có phần mơ, nên các cài đặt này không thể được lưu. Chuyển engine trên tab Overview để chỉnh sửa.",
+      },
+    },
+  },
   sessionsPage: {
     hubTablistLabel: "Các mục Threads",
   },
@@ -2310,6 +2467,21 @@ export const vi: TranslationMap = {
       description: "Cho phép Chế độ Code điều phối các nhóm tác nhân con song song.",
       empty: "Không có swarm nào đang hoạt động.",
       defaultPhase: "Chưa phân giai đoạn",
+    },
+    toolSearch: {
+      title: "Tìm kiếm công cụ",
+      description:
+        "Giữ một thư mục công cụ có giới hạn hiển thị và trì hoãn phần còn lại phía sau tìm kiếm, để các danh mục MCP và plugin lớn không còn chiếm chỗ trong prompt.",
+    },
+    localModelLean: {
+      title: "Công cụ gọn nhẹ cho model cục bộ",
+      description:
+        "Loại bỏ các công cụ mặc định nặng mà các model cục bộ nhỏ hơn xử lý kém, để lại một tập ngắn hơn mà chúng có thể dùng đáng tin cậy.",
+    },
+    auditMessages: {
+      title: "Siêu dữ liệu kiểm tra tin nhắn",
+      description:
+        "Ghi lại siêu dữ liệu không chứa nội dung cho các cuộc trò chuyện trực tiếp trong sổ kiểm tra. Nội dung tin nhắn không bao giờ được lưu trữ.",
     },
   },
   aboutPage: {
@@ -3106,6 +3278,7 @@ export const vi: TranslationMap = {
     },
   },
   attention: {
+    cronErrorUnknown: "Lỗi không xác định",
     cronFailed: "{count} tác vụ cron không thành công",
     cronOverdue: "{count} tác vụ cron quá hạn",
     modelAuthExpired: "Xác thực mô hình đã hết hạn: {providers}",
@@ -3201,14 +3374,18 @@ export const vi: TranslationMap = {
       on: "Đang bật Dreaming",
       off: "Đang tắt Dreaming",
     },
-    restartConfirmation: {
-      title: "Khởi động lại Gateway để áp dụng thay đổi",
-      subtitle: "Thay đổi chế độ Dreaming sẽ khởi động lại Gateway.",
-      warning:
-        "Hành động này sẽ khởi động lại Gateway và có thể tạm thời gián đoạn trò chuyện, tự động hóa và các kênh đã kết nối.",
-      confirm: "Xác nhận khởi động lại",
-      restarting: "Đang khởi động lại…",
-      failed: "Không thể áp dụng thay đổi. Kiểm tra kết nối của bạn và thử lại.",
+    toggleConfirmation: {
+      subtitle: "Mơ là cài đặt toàn cục; nó không giới hạn trong agent này.",
+      enableTitle: "Bật Mơ cho Tất cả Agent",
+      enableDetail:
+        "Quá trình quét mơ hàng đêm sẽ chạy trên mọi không gian làm việc agent đã cấu hình, thăng cấp các hồi tưởng ngắn hạn thành bộ nhớ dài hạn. Điều này áp dụng ngay lập tức.",
+      enableConfirm: "Bật Mơ",
+      disableTitle: "Tắt Mơ cho Tất cả Agent",
+      disableDetail:
+        "Quá trình quét mơ hàng đêm sẽ dừng cho mọi agent đã cấu hình, không chỉ riêng agent này. Những bộ nhớ đã ghi vẫn còn; không có gì mới được thăng cấp. Điều này áp dụng ngay lập tức.",
+      disableConfirm: "Tắt Dreaming",
+      saving: "Đang lưu…",
+      failed: "Không thể áp dụng thay đổi. Kiểm tra kết nối và thử lại.",
     },
     status: {
       active: "Dreaming đang hoạt động",
@@ -3851,6 +4028,11 @@ export const vi: TranslationMap = {
     },
     outputTokens: "{count} token đầu ra",
     archivedSessionDisabled: "Khôi phục phiên này để gửi tin nhắn.",
+    sessionRoute: {
+      chooseTitle: "Chọn một phiên",
+      multipleMatches: "Có nhiều hơn một phiên khớp với {shortId}.",
+      additionalMatches: "Vẫn còn kết quả tìm kiếm. Hãy dùng tiền tố id dài hơn.",
+    },
     sessionSharing: {
       menu: "Chia sẻ luồng",
       current: "Hiển thị luồng: {visibility}",
@@ -3902,6 +4084,15 @@ export const vi: TranslationMap = {
       oneMessage: "{count} tin nhắn",
       messages: "{count} tin nhắn",
       activeBranch: "Nhánh đang hoạt động",
+      gatewayPicker: {
+        menuLabel: "Gateway: {gateway}",
+        primaryTag: "chính",
+        setPrimary: "Đặt làm chính…",
+        openSettings: "Cài đặt Gateway…",
+        connected: "Đã kết nối",
+        unreachable: "Không thể kết nối",
+        unknown: "Trạng thái không xác định",
+      },
     },
     board: {
       faceLabel: "Mặt luồng",
@@ -4093,7 +4284,9 @@ export const vi: TranslationMap = {
       threads: "Luồng",
       groups: "Nhóm",
       coding: "Lập trình",
-      groupCatalogSessionsByProject: "Nhóm theo dự án",
+      catalogViewOptions: "Tùy chọn hiển thị",
+      catalogGroupByProject: "Dự án",
+      catalogGroupByPerson: "Người",
       openSessionMenu: "Open session menu",
       sortBy: "Sắp xếp theo",
       sortCreated: "Đã tạo",
@@ -4272,6 +4465,16 @@ export const vi: TranslationMap = {
       renderedMarkdownHint: "Bản xem trước văn bản đa dạng thức đã lọc để đọc nhanh.",
       noPreviewableMarkdown: "Không có nội dung markdown có thể xem trước.",
       noContent: "Không có nội dung khả dụng",
+    },
+    sidebarColumns: {
+      chat: "Trò chuyện",
+      discussion: "Thảo luận",
+      detail: "Chi tiết",
+      close: "Đóng {panel}",
+      drag: "Kéo {panel}",
+      dropOnEmptyLeft: "Di chuyển {panel} sang thanh bên trái trống",
+      dropOnEmptyRight: "Di chuyển {panel} sang thanh bên phải trống",
+      resize: "Thay đổi kích thước {panel}",
     },
     thread: {
       search: "Tìm kiếm tin nhắn",

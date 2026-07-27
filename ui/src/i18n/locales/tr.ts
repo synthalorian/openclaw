@@ -41,6 +41,7 @@ export const tr: TranslationMap = {
     unselect: "Seçimi kaldır",
     enabled: "Etkin",
     disabled: "Devre dışı",
+    failed: "Başarısız",
     none: "yok",
     na: "yok",
     never: "never",
@@ -597,7 +598,8 @@ export const tr: TranslationMap = {
     worktreeNameInvalid: "Worktree adları küçük harfler, rakamlar ve tireler kullanır.",
     incognito: "Gizli",
     incognitoDescription: "Bu konuşmayı yalnızca Gateway yeniden başlayana kadar tut",
-    startAsDraft: "Taslak olarak başlat",
+    draft: "Taslak",
+    draftDescription: "Yayınlayana kadar bu konu başlığını kendinize saklayın",
     messagePlaceholder: "Bu oturum ne üzerinde çalışmalı?",
     readingAttachment: "Ek okunuyor",
     start: "Oturumu başlat",
@@ -729,6 +731,7 @@ export const tr: TranslationMap = {
     runErrorTimedOut: "Zaman aşımına uğradı",
     runErrorUnknown: "Bilinmeyen hata",
     attentionRequired: "Oturum ilgi gerektiriyor",
+    openSession: "Konu başlığını aç",
     model: "Model",
     provider: "Sağlayıcı",
     runtime: "Çalışma zamanı",
@@ -1846,6 +1849,7 @@ export const tr: TranslationMap = {
     appearance: "Görünüm",
     automation: "Otomasyon",
     mcp: "MCP",
+    memory: "Bellek",
     infrastructure: "Altyapı",
     labs: "Labs",
     about: "Hakkında",
@@ -1883,6 +1887,7 @@ export const tr: TranslationMap = {
     appearance: "Tema, UI ve kurulum sihirbazı ayarları.",
     automation: "Komutlar, kancalar, cron ve eklentiler.",
     mcp: "MCP sunucuları, kimlik doğrulama, araçlar ve tanılama.",
+    memory: "Bellek motoru, arka uç, arama ve rüya görme.",
     infrastructure: "Gateway, web, tarayıcı ve medya ayarları.",
     labs: "Deneysel aracı ve araç yetenekleri.",
     about: "Control UI ve bağlı Gateway derleme kimliği.",
@@ -2151,6 +2156,157 @@ export const tr: TranslationMap = {
     tlsVerifyOff: "TLS doğrulaması kapalı",
     mtls: "mTLS",
   },
+  memoryPage: {
+    tablistLabel: "Bellek bölümleri",
+    tabs: {
+      overview: "Genel Bakış",
+      search: "Ara",
+      dreaming: "Rüya Görme",
+    },
+    engine: {
+      title: "Motor",
+      description:
+        "Bellek yuvasına tam olarak bir bellek eklentisi sahiptir. Bir motor seçmek onu etkinleştirir ve diğerlerini devre dışı bırakır.",
+      rowTitle: "Bellek motoru",
+      off: "Kapalı",
+      autoHint:
+        "Yapılandırmada hiçbir motor sabitlenmediğinden, yuva varsayılan sahibine geri döner.",
+      explicitHint: "Bu motor, plugins.slots.memory altında yapılandırmada sabitlenmiştir.",
+      offHint: "Bellek yapılandırmada kapatıldı: plugins.slots.memory değeri none olarak ayarlı.",
+      catalogUnavailable: "Bellek motorunu değiştirmek için gateway'e bağlanın.",
+      changeFailed: "Bellek motoru değiştirilemedi",
+      disabledTitle: "Bu motor devre dışı",
+      disabledHint:
+        "Bellek yuvası bu eklentiyi işaret ediyor, ancak eklentinin kendisi devre dışı olduğundan bellek çalışmıyor.",
+      enable: "Etkinleştirin:",
+    },
+    backend: {
+      title: "Arka Uç",
+      description: "Seçili motor için belleğin nasıl depolandığı ve alındığı.",
+      rowTitle: "Alma arka ucu",
+      builtin: "Yerleşik",
+      qmd: "QMD",
+      builtinHint: "Bellek dosyaları OpenClaw'un kendisi tarafından dizinlenir ve aranır.",
+      qmdHint: "Erişim QMD'ye devredilir. Ayarları aşağıda görünür.",
+    },
+    addons: {
+      title: "Eklentiler",
+      description:
+        "Bu eklentiler yuva için rekabet etmek yerine motorun üzerine katmanlanır, bu nedenle herhangi bir kombinasyon aynı anda çalışabilir.",
+      activeMemory: {
+        title: "Aktif bellek",
+      },
+      memoryWiki: {
+        title: "Bellek wiki'si",
+      },
+      stateUnknown: "Bilinmiyor",
+      manage: "Eklentileri etkinleştir veya devre dışı bırak",
+      manageLink: "Eklentileri Aç",
+    },
+    import: {
+      title: "İçe aktar",
+      description: "Diğer asistanlardaki mevcut belleği bir aracı çalışma alanına aktarın.",
+      link: "Bellek İçe Aktarma'yı Aç",
+    },
+    search: {
+      intro:
+        "Bellek geçersiz kılması olmayan her aracı tarafından paylaşılan gömme ve erişim varsayılanları.",
+    },
+    dreaming: {
+      intro:
+        "Dreaming, her aracı çalışma alanında tek bir yönetilen cron işi olarak çalışır, bu nedenle bu ayarlar geneldir. Bunlar {plugin} eklentisine aittir.",
+      schedule: {
+        title: "Zamanlama",
+        description: "Tam taramanın ne zaman çalışacağı ve hangi modelin anlatacağı.",
+      },
+      frequency: {
+        label: "Dreaming sıklığı",
+        help: "Tam dreaming taraması için cron temposu (hafif, REM, sonra derin). Eklenti varsayılanı için boş bırakın.",
+        placeholder: "0 3 * * *",
+      },
+      timezone: {
+        label: "Saat dilimi",
+        help: "Cron temposunu yorumlamak için kullanılan IANA saat dilimi.",
+        placeholder: "Europe/Vienna",
+      },
+      model: {
+        label: "Dreaming modeli",
+        help: "Rüya günlüğü anlatımı için sağlayıcı/model geçersiz kılması. Alt aracı model geçersiz kılmalarına izin verilmesini gerektirir.",
+        placeholder: "anthropic/claude-sonnet-4-6",
+      },
+      verboseLogging: {
+        label: "Ayrıntılı günlük kaydı",
+        help: "Her rüya görme aşamasını ayrıntılı olarak kaydedin. Eşikleri ayarlarken kullanışlıdır.",
+      },
+      storage: {
+        title: "Depolama",
+        description: "Yükseltilen anıların ve rüya görme raporlarının nereye yazıldığı.",
+        modeLabel: "Depolama modu",
+        modeHelp: "Satır içi mod anı dosyasına yazar; ayrı mod özel bir rapor dosyası tutar.",
+        modes: {
+          inline: "Satır içi",
+          separate: "Ayrı",
+          both: "Her ikisi",
+        },
+        separateReportsLabel: "Ayrı raporlar",
+        separateReportsHelp: "Rüya görme raporlarını ana anı dosyasının dışında tutun.",
+      },
+      phases: {
+        light: {
+          title: "Hafif aşama",
+          description: "Yeniden oynatma adaylarını hazırlayan ucuz bir son etkinlik geçişi.",
+        },
+        deep: {
+          title: "Derin aşama",
+          description: "Kısa vadeli girdileri anıya yükselten puanlı yükseltme geçişi.",
+        },
+        rem: {
+          title: "REM aşaması",
+          description: "Geriye bakış penceresi boyunca tekrarlayan temaları arayan desen geçişi.",
+        },
+      },
+      phaseFields: {
+        enabled: "Etkin",
+        enabledHelp: "Bu aşamayı tarama sırasında çalıştırın.",
+        lookbackDays: "Geriye bakış günleri",
+        lookbackDaysHelp:
+          "Bu aşamanın ne kadar geriye baktığı. Eklenti varsayılanı için boş bırakın.",
+        limit: "Sınır",
+        limitHelp: "Bu aşamanın her çalıştırmada işlediği maksimum giriş sayısı.",
+        dedupeSimilarity: "Yinelenen ayıklama benzerliği",
+        dedupeSimilarityHelp: "İki adayın yinelenen olarak değerlendirileceği benzerlik eşiği.",
+        minScore: "Minimum puan",
+        minScoreHelp: "Bir girişin ulaşması gereken yükseltme puanı.",
+        minRecallCount: "Minimum çağırma",
+        minRecallCountHelp: "Bir girişin yükseltilebilmesi için kaç kez çağrılması gerektiği.",
+        minUniqueQueries: "Minimum benzersiz sorgu",
+        minUniqueQueriesHelp: "Girişi kaç farklı sorgunun ortaya çıkarmış olması gerektiği.",
+        recencyHalfLifeDays: "Güncellik yarı ömrü (gün)",
+        recencyHalfLifeDaysHelp:
+          "Daha eski çağırma sinyallerinin ne kadar hızlı ağırlığını kaybettiği.",
+        maxAgeDays: "Maksimum yaş (gün)",
+        maxAgeDaysHelp: "Bundan daha eski kısa vadeli girişleri yoksay.",
+        maxPromotedSnippetTokens: "Maks yükseltilen parça belirteçleri",
+        maxPromotedSnippetTokensHelp:
+          "Her yükseltilen parça için belirteç bütçesi. Kaynak bilgisi ekli kalır.",
+        minPatternStrength: "Minimum örüntü gücü",
+        minPatternStrengthHelp:
+          "Tekrarlayan bir örüntünün raporlanabilmesi için ulaşması gereken güç.",
+      },
+      agentScope: {
+        title: "Aracı görünümü",
+        description:
+          "Yukarıdaki ayarlar geneldir. Aşağıdaki rüya günlüğü, kısa vadeli sayılar ve bakım işlemleri tek bir aracıya aittir.",
+        rowTitle: "Aracı",
+      },
+      unsupported: {
+        title: "Rüya görme ayarları",
+        rowTitle: "Bu motor için kullanılamıyor",
+        description:
+          "{plugin} eklentisi bellek yuvasının sahibidir ve yapılandırma şemasında rüya görme bölümü yoktur, bu nedenle bu ayarlar depolanamaz. Bunları düzenlemek için Genel Bakış sekmesinden motoru değiştirin.",
+      },
+    },
+  },
   sessionsPage: {
     hubTablistLabel: "İş parçacığı bölümleri",
   },
@@ -2323,6 +2479,21 @@ export const tr: TranslationMap = {
       description: "Kod Modu'nun alt aracı gruplarını paralel olarak yönetmesine izin verin.",
       empty: "Etkin swarm yok.",
       defaultPhase: "Aşamasız",
+    },
+    toolSearch: {
+      title: "Araç Arama",
+      description:
+        "Sınırlı bir araç dizinini görünür tutun ve geri kalanını aramanın arkasına erteleyin; böylece büyük MCP ve eklenti katalogları istemi kalabalıklaştırmayı bırakır.",
+    },
+    localModelLean: {
+      title: "Yerel modeller için sade araçlar",
+      description:
+        "Küçük yerel modellerin zayıf şekilde işlediği ağır varsayılan araçları çıkarın, güvenilir şekilde kullanabilecekleri daha kısa bir set bırakın.",
+    },
+    auditMessages: {
+      title: "Mesaj denetim meta verileri",
+      description:
+        "Doğrudan konuşmalar için içerik içermeyen meta verileri denetim kaydına kaydedin. Mesaj içeriği asla depolanmaz.",
     },
   },
   aboutPage: {
@@ -3118,6 +3289,7 @@ export const tr: TranslationMap = {
     },
   },
   attention: {
+    cronErrorUnknown: "Bilinmeyen hata",
     cronFailed: "{count} cron görevi başarısız oldu",
     cronOverdue: "{count} cron görevinin süresi geçti",
     modelAuthExpired: "Model kimlik doğrulamasının süresi doldu: {providers}",
@@ -3213,14 +3385,18 @@ export const tr: TranslationMap = {
       on: "Dreaming Açık",
       off: "Dreaming Kapalı",
     },
-    restartConfirmation: {
-      title: "Restart Gateway to Apply Change",
-      subtitle: "Changing Dreaming mode restarts the gateway.",
-      warning:
-        "This action will restart the Gateway and may temporarily interrupt chats, automations, and connected channels.",
-      confirm: "Confirm Restart",
-      restarting: "Restarting…",
-      failed: "Could not apply change. Check your connection and try again.",
+    toggleConfirmation: {
+      subtitle: "Rüya görme genel bir ayardır; bu aracıya özgü değildir.",
+      enableTitle: "Rüya Görmeyi Tüm Aracılar İçin Aç",
+      enableDetail:
+        "Gece boyunca yapılan rüya görme taraması, yapılandırılmış her aracı çalışma alanında çalışarak kısa vadeli hatırlamaları uzun vadeli belleğe yükseltir. Bu hemen geçerli olur.",
+      enableConfirm: "Rüya Görmeyi Aç",
+      disableTitle: "Rüya Görmeyi Tüm Aracılar İçin Kapat",
+      disableDetail:
+        "Gece boyunca yapılan rüya görme taraması yalnızca bu aracı için değil, yapılandırılmış her aracı için durur. Zaten yazılmış anılar kalır; yeni hiçbir şey yükseltilmez. Bu hemen geçerli olur.",
+      disableConfirm: "Rüya Görmeyi Kapat",
+      saving: "Kaydediliyor…",
+      failed: "Değişiklik uygulanamadı. Bağlantınızı kontrol edip yeniden deneyin.",
     },
     status: {
       active: "Dreaming Etkin",
@@ -3872,6 +4048,11 @@ export const tr: TranslationMap = {
     },
     outputTokens: "{count} çıktı belirteci",
     archivedSessionDisabled: "Mesaj göndermek için bu oturumu geri yükleyin.",
+    sessionRoute: {
+      chooseTitle: "Bir oturum seçin",
+      multipleMatches: "Birden fazla oturum {shortId} ile eşleşiyor.",
+      additionalMatches: "Hâlâ arama sonuçları var. Daha uzun bir id öneki kullanın.",
+    },
     sessionSharing: {
       menu: "Konu paylaşımı",
       current: "Konu görünürlüğü: {visibility}",
@@ -3923,6 +4104,15 @@ export const tr: TranslationMap = {
       oneMessage: "{count} mesaj",
       messages: "{count} mesaj",
       activeBranch: "Etkin dal",
+      gatewayPicker: {
+        menuLabel: "Gateway: {gateway}",
+        primaryTag: "birincil",
+        setPrimary: "Birincil olarak ayarla…",
+        openSettings: "Gateway ayarları…",
+        connected: "Bağlı",
+        unreachable: "Erişilemiyor",
+        unknown: "Durum bilinmiyor",
+      },
     },
     board: {
       faceLabel: "İş parçacığı yüzü",
@@ -4113,7 +4303,9 @@ export const tr: TranslationMap = {
       threads: "Konu Başlıkları",
       groups: "Gruplar",
       coding: "Kodlama",
-      groupCatalogSessionsByProject: "Projeye göre grupla",
+      catalogViewOptions: "Görünüm seçenekleri",
+      catalogGroupByProject: "Proje",
+      catalogGroupByPerson: "Kişi",
       openSessionMenu: "Open session menu",
       sortBy: "Sıralama ölçütü",
       sortCreated: "Oluşturulma",
@@ -4292,6 +4484,16 @@ export const tr: TranslationMap = {
       renderedMarkdownHint: "Hızlı okuma için temizlenmiş zengin metin önizlemesi.",
       noPreviewableMarkdown: "Önizlenebilir markdown içeriği yok.",
       noContent: "İçerik yok",
+    },
+    sidebarColumns: {
+      chat: "Sohbet",
+      discussion: "Tartışma",
+      detail: "Ayrıntılar",
+      close: "{panel} kapat",
+      drag: "{panel} sürükle",
+      dropOnEmptyLeft: "{panel} panelini boş sol kenar çubuğuna taşı",
+      dropOnEmptyRight: "{panel} panelini boş sağ kenar çubuğuna taşı",
+      resize: "{panel} yeniden boyutlandır",
     },
     thread: {
       search: "Mesajlarda ara",

@@ -41,6 +41,7 @@ export const ja_JP: TranslationMap = {
     unselect: "選択解除",
     enabled: "有効",
     disabled: "無効",
+    failed: "失敗",
     none: "なし",
     na: "n/a",
     never: "never",
@@ -604,7 +605,8 @@ export const ja_JP: TranslationMap = {
     worktreeNameInvalid: "ワークツリー名には小文字、数字、ハイフンを使用できます。",
     incognito: "シークレット",
     incognitoDescription: "Gatewayが再起動するまでこのスレッドを保持します",
-    startAsDraft: "下書きとして開始",
+    draft: "下書き",
+    draftDescription: "公開するまでこのスレッドを自分だけに保つ",
     messagePlaceholder: "このセッションで何に取り組みますか？",
     readingAttachment: "添付ファイルを読み込み中",
     start: "セッションを開始",
@@ -736,6 +738,7 @@ export const ja_JP: TranslationMap = {
     runErrorTimedOut: "タイムアウト",
     runErrorUnknown: "不明なエラー",
     attentionRequired: "セッションに対応が必要です",
+    openSession: "スレッドを開く",
     model: "モデル",
     provider: "プロバイダー",
     runtime: "ランタイム",
@@ -1852,6 +1855,7 @@ export const ja_JP: TranslationMap = {
     appearance: "表示",
     automation: "自動化",
     mcp: "MCP",
+    memory: "メモリ",
     infrastructure: "インフラストラクチャ",
     labs: "Labs",
     about: "概要",
@@ -1888,6 +1892,7 @@ export const ja_JP: TranslationMap = {
     appearance: "テーマ、UI、セットアップウィザードの設定。",
     automation: "コマンド、フック、cron、プラグイン。",
     mcp: "MCP サーバー、認証、ツール、診断。",
+    memory: "メモリエンジン、バックエンド、検索、ドリーミング。",
     infrastructure: "Gateway、Web、ブラウザー、メディアの設定。",
     labs: "実験的なエージェントとツールの機能。",
     about: "Control UI と接続された Gateway のビルド ID。",
@@ -2159,6 +2164,158 @@ export const ja_JP: TranslationMap = {
     tlsVerifyOff: "TLS 検証オフ",
     mtls: "mTLS",
   },
+  memoryPage: {
+    tablistLabel: "メモリセクション",
+    tabs: {
+      overview: "概要",
+      search: "検索",
+      dreaming: "ドリーミング",
+    },
+    engine: {
+      title: "エンジン",
+      description:
+        "メモリスロットを所有できるメモリプラグインは正確に1つです。エンジンを選択すると有効化され、他は無効になります。",
+      rowTitle: "メモリエンジン",
+      off: "オフ",
+      autoHint:
+        "設定でエンジンが固定されていないため、スロットはデフォルトの所有者にフォールバックします。",
+      explicitHint: "このエンジンは plugins.slots.memory の設定で固定されています。",
+      offHint:
+        "メモリは設定でオフになっています: plugins.slots.memory が none に設定されています。",
+      catalogUnavailable: "メモリエンジンを変更するにはゲートウェイに接続してください。",
+      changeFailed: "メモリエンジンを変更できませんでした",
+      disabledTitle: "このエンジンは無効です",
+      disabledHint:
+        "メモリスロットはこのプラグインを指していますが、プラグイン自体が無効なため、メモリは実行されていません。",
+      enable: "有効化：",
+    },
+    backend: {
+      title: "バックエンド",
+      description: "選択したエンジンでメモリを保存・取得する方法。",
+      rowTitle: "取得バックエンド",
+      builtin: "組み込み",
+      qmd: "QMD",
+      builtinHint: "メモリファイルはOpenClaw自体がインデックスして検索します。",
+      qmdHint: "取得はQMDに委任されます。その設定は以下に表示されます。",
+    },
+    addons: {
+      title: "アドオン",
+      description:
+        "これらのプラグインはスロットを奪い合うのではなくエンジンの上に重なるため、任意の組み合わせを同時に実行できます。",
+      activeMemory: {
+        title: "アクティブメモリ",
+      },
+      memoryWiki: {
+        title: "メモリWiki",
+      },
+      stateUnknown: "不明",
+      manage: "アドオンの有効化または無効化",
+      manageLink: "プラグインを開く",
+    },
+    import: {
+      title: "インポート",
+      description: "他のアシスタントの既存メモリをエージェントワークスペースに取り込みます。",
+      link: "メモリインポートを開く",
+    },
+    search: {
+      intro:
+        "メモリのオーバーライドがないすべてのエージェントで共有される埋め込みと取得のデフォルト設定です。",
+    },
+    dreaming: {
+      intro:
+        "Dreamingはすべてのエージェントワークスペースにわたる1つの管理されたcronジョブとして実行されるため、これらの設定はグローバルです。これらは{plugin}プラグインが所有します。",
+      schedule: {
+        title: "スケジュール",
+        description: "完全なスイープが実行されるタイミングと、それをナレーションするモデルです。",
+      },
+      frequency: {
+        label: "Dreamingの頻度",
+        help: "完全なdreamingスイープ（light、REM、deepの順）のcronの間隔です。プラグインのデフォルトを使用する場合は空のままにします。",
+        placeholder: "0 3 * * *",
+      },
+      timezone: {
+        label: "タイムゾーン",
+        help: "cronの間隔を解釈するために使用されるIANAタイムゾーンです。",
+        placeholder: "Europe/Vienna",
+      },
+      model: {
+        label: "Dreamingモデル",
+        help: "夢日記のナレーション用のプロバイダー/モデルの上書き。サブエージェントのモデル上書きが許可されている必要があります。",
+        placeholder: "anthropic/claude-sonnet-4-6",
+      },
+      verboseLogging: {
+        label: "詳細ログ",
+        help: "各ドリーミングフェーズを詳細にログ記録します。しきい値を調整する際に便利です。",
+      },
+      storage: {
+        title: "ストレージ",
+        description: "昇格されたメモリとドリーミングレポートの書き込み先。",
+        modeLabel: "ストレージモード",
+        modeHelp:
+          "インラインはメモリファイルに書き込み、セパレートは専用のレポートファイルを保持します。",
+        modes: {
+          inline: "インライン",
+          separate: "セパレート",
+          both: "両方",
+        },
+        separateReportsLabel: "レポートを分離",
+        separateReportsHelp: "ドリーミングレポートをメインのメモリファイルから分離して保持します。",
+      },
+      phases: {
+        light: {
+          title: "ライトフェーズ",
+          description: "最近のアクティビティを低コストで処理し、リプレイ候補を準備します。",
+        },
+        deep: {
+          title: "ディープフェーズ",
+          description: "スコアリングによる昇格処理で、短期エントリをメモリに昇格させます。",
+        },
+        rem: {
+          title: "REMフェーズ",
+          description: "振り返り期間全体で繰り返されるテーマを探すパターン処理。",
+        },
+      },
+      phaseFields: {
+        enabled: "有効",
+        enabledHelp: "スイープ中にこのフェーズを実行します。",
+        lookbackDays: "遡及日数",
+        lookbackDaysHelp:
+          "このフェーズがどこまで遡って読み込むか。プラグインのデフォルトを使う場合は空のままにしてください。",
+        limit: "上限",
+        limitHelp: "このフェーズが1回の実行で処理する最大エントリ数。",
+        dedupeSimilarity: "重複除去の類似度",
+        dedupeSimilarityHelp: "この値を超える類似度の2つの候補は重複として扱われます。",
+        minScore: "最小スコア",
+        minScoreHelp: "エントリが到達しなければならない昇格スコア。",
+        minRecallCount: "最小想起回数",
+        minRecallCountHelp: "昇格される前にエントリが想起されなければならない回数。",
+        minUniqueQueries: "最小ユニーククエリ数",
+        minUniqueQueriesHelp: "エントリを浮上させたはずの個別クエリの数。",
+        recencyHalfLifeDays: "最近性の半減期（日）",
+        recencyHalfLifeDaysHelp: "古い想起シグナルがどれだけ早く重みを失うか。",
+        maxAgeDays: "最大経過日数（日）",
+        maxAgeDaysHelp: "これより古い短期エントリを無視します。",
+        maxPromotedSnippetTokens: "昇格スニペットの最大トークン数",
+        maxPromotedSnippetTokensHelp:
+          "各昇格スニペットのトークン予算。出所情報は引き続き添付されます。",
+        minPatternStrength: "最小パターン強度",
+        minPatternStrengthHelp:
+          "繰り返し発生するパターンが報告されるために到達しなければならない強度。",
+      },
+      agentScope: {
+        title: "エージェントビュー",
+        description:
+          "上記の設定はグローバルです。以下の夢日記、短期カウント、メンテナンス操作は1つのエージェントに属します。",
+        rowTitle: "エージェント",
+      },
+      unsupported: {
+        title: "ドリーミング設定",
+        rowTitle: "このエンジンでは利用できません",
+        description:
+          "{plugin} プラグインがメモリスロットを所有しており、その設定スキーマにドリーミングセクションがないため、これらの設定を保存できません。編集するには概要タブでエンジンを切り替えてください。",
+      },
+    },
+  },
   sessionsPage: {
     hubTablistLabel: "スレッドセクション",
   },
@@ -2319,6 +2476,21 @@ export const ja_JP: TranslationMap = {
         "Code Modeがサブエージェントのグループを並列でオーケストレーションできるようにします。",
       empty: "アクティブなswarmはありません。",
       defaultPhase: "フェーズなし",
+    },
+    toolSearch: {
+      title: "ツール検索",
+      description:
+        "限られたツールディレクトリを表示したまま、残りは検索の背後に遅延させることで、大規模なMCPおよびプラグインカタログがプロンプトを圧迫しないようにします。",
+    },
+    localModelLean: {
+      title: "ローカルモデル向けのリーンツール",
+      description:
+        "小規模なローカルモデルがうまく扱えない重いデフォルトツールを外し、確実に使える短いセットを残します。",
+    },
+    auditMessages: {
+      title: "メッセージ監査メタデータ",
+      description:
+        "ダイレクト会話のコンテンツを含まないメタデータを監査台帳に記録します。メッセージの内容は保存されません。",
     },
   },
   aboutPage: {
@@ -3117,6 +3289,7 @@ export const ja_JP: TranslationMap = {
     },
   },
   attention: {
+    cronErrorUnknown: "不明なエラー",
     cronFailed: "{count} 件の cron ジョブが失敗しました",
     cronOverdue: "{count} 件の cron ジョブが期限を超過しています",
     modelAuthExpired: "モデル認証の有効期限が切れました: {providers}",
@@ -3212,14 +3385,19 @@ export const ja_JP: TranslationMap = {
       on: "Dreaming オン",
       off: "Dreaming オフ",
     },
-    restartConfirmation: {
-      title: "Restart Gateway to Apply Change",
-      subtitle: "Changing Dreaming mode restarts the gateway.",
-      warning:
-        "This action will restart the Gateway and may temporarily interrupt chats, automations, and connected channels.",
-      confirm: "Confirm Restart",
-      restarting: "Restarting…",
-      failed: "Could not apply change. Check your connection and try again.",
+    toggleConfirmation: {
+      subtitle:
+        "ドリーミングはグローバル設定です。このエージェントに限定されるものではありません。",
+      enableTitle: "すべてのエージェントでドリーミングをオンにする",
+      enableDetail:
+        "夜間のドリーミングスイープが、設定されたすべてのエージェントワークスペースで実行され、短期のリコールを長期記憶へと昇格させます。これはすぐに適用されます。",
+      enableConfirm: "ドリーミングをオンにする",
+      disableTitle: "すべてのエージェントでドリーミングをオフにする",
+      disableDetail:
+        "夜間のドリーミングスイープは、このエージェントだけでなく、設定済みのすべてのエージェントで停止します。すでに書き込まれたメモリは残りますが、新たに昇格されることはありません。この変更はすぐに適用されます。",
+      disableConfirm: "ドリーミングをオフにする",
+      saving: "保存中…",
+      failed: "変更を適用できませんでした。接続を確認して、もう一度お試しください。",
     },
     status: {
       active: "Dreaming 有効",
@@ -3871,6 +4049,11 @@ export const ja_JP: TranslationMap = {
     },
     outputTokens: "{count} 出力トークン",
     archivedSessionDisabled: "メッセージを送信するには、このセッションを復元してください。",
+    sessionRoute: {
+      chooseTitle: "セッションを選択",
+      multipleMatches: "{shortId} に一致するセッションが複数あります。",
+      additionalMatches: "検索結果がまだあります。より長いidプレフィックスを使用してください。",
+    },
     sessionSharing: {
       menu: "スレッドの共有",
       current: "スレッドの表示範囲: {visibility}",
@@ -3922,6 +4105,15 @@ export const ja_JP: TranslationMap = {
       oneMessage: "{count} 件のメッセージ",
       messages: "{count} 件のメッセージ",
       activeBranch: "アクティブなブランチ",
+      gatewayPicker: {
+        menuLabel: "Gateway: {gateway}",
+        primaryTag: "プライマリ",
+        setPrimary: "プライマリに設定…",
+        openSettings: "Gateway 設定…",
+        connected: "接続済み",
+        unreachable: "到達不能",
+        unknown: "不明なステータス",
+      },
     },
     board: {
       faceLabel: "スレッドフェイス",
@@ -4112,7 +4304,9 @@ export const ja_JP: TranslationMap = {
       threads: "スレッド",
       groups: "グループ",
       coding: "コーディング",
-      groupCatalogSessionsByProject: "プロジェクトでグループ化",
+      catalogViewOptions: "表示オプション",
+      catalogGroupByProject: "プロジェクト",
+      catalogGroupByPerson: "担当者",
       openSessionMenu: "Open session menu",
       sortBy: "並べ替え",
       sortCreated: "作成日時",
@@ -4292,6 +4486,16 @@ export const ja_JP: TranslationMap = {
       renderedMarkdownHint: "素早く読むためのサニタイズされたリッチテキストプレビュー。",
       noPreviewableMarkdown: "プレビュー可能なMarkdownコンテンツがありません。",
       noContent: "利用可能なコンテンツがありません",
+    },
+    sidebarColumns: {
+      chat: "チャット",
+      discussion: "ディスカッション",
+      detail: "詳細",
+      close: "{panel} を閉じる",
+      drag: "{panel} をドラッグ",
+      dropOnEmptyLeft: "{panel} を空の左サイドバーに移動",
+      dropOnEmptyRight: "{panel} を空の右サイドバーに移動",
+      resize: "{panel} のサイズを変更",
     },
     thread: {
       search: "メッセージを検索",
