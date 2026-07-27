@@ -311,7 +311,30 @@ function refreshMessageOperationRouteBinding(params: {
   }
   const existing = params.context.dedupe.get(params.binding.key);
   if (existing?.requestIdentity === params.requestScope) {
-    params.context.dedupe.set(params.binding.key, { ...existing, ts: Date.now() });
+    params.context.dedupe.set(params.binding.key, {
+      ...existing,
+      ts: Date.now(),
+      retainUntilSettled: false,
+    });
+  }
+}
+
+function retainMessageOperationRouteBinding(params: {
+  context: GatewayRequestContext;
+  binding: MessageOperationRouteBinding | undefined;
+  requestScope: string;
+}): void {
+  if (!params.binding) {
+    return;
+  }
+  const existing = params.context.dedupe.get(params.binding.key);
+  if (existing?.requestIdentity === params.requestScope) {
+    // Maintenance must not sever the mutable-default binding from its canonical
+    // in-flight operation; settlement below starts the ordinary bounded TTL.
+    params.context.dedupe.set(params.binding.key, {
+      ...existing,
+      retainUntilSettled: true,
+    });
   }
 }
 
@@ -790,6 +813,11 @@ export const sendHandlers: GatewayRequestHandlers = {
       return;
     }
     const { dedupeKey, inflightMap } = inflight;
+    retainMessageOperationRouteBinding({
+      context,
+      binding: routeBinding,
+      requestScope: accountRoute.requestScope,
+    });
     const work = (async (): Promise<InflightResult> => {
       try {
         const sessionKey = normalizeOptionalString(request.sessionKey) ?? undefined;
@@ -1033,6 +1061,11 @@ export const sendHandlers: GatewayRequestHandlers = {
       return;
     }
     const { idem, dedupeKey, inflightMap } = inflight;
+    retainMessageOperationRouteBinding({
+      context,
+      binding: routeBinding,
+      requestScope: accountRoute.requestScope,
+    });
 
     const work = (async (): Promise<InflightResult> => {
       try {
@@ -1350,6 +1383,11 @@ export const sendHandlers: GatewayRequestHandlers = {
       return;
     }
     const { idem, dedupeKey, inflightMap } = inflight;
+    retainMessageOperationRouteBinding({
+      context,
+      binding: routeBinding,
+      requestScope: accountRoute.requestScope,
+    });
     const work = (async (): Promise<InflightResult> => {
       const poll = {
         question: request.question,
