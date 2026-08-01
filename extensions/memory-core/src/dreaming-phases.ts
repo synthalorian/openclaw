@@ -357,7 +357,11 @@ function buildDailySnippetChunks(lines: string[], limit: number): DailySnippetCh
 function resolveDailyFileProvenance(params: {
   currentHash: string;
   defaultObservedAt: number;
-  recorded?: { fileHash: string; originClass: "agent" | "untrusted"; observedAt: number };
+  recorded?: {
+    fileHash: string;
+    originClass: "agent" | "untrusted";
+    observedAt: number;
+  };
 }): { originClass: "agent" | "untrusted"; observedAt: number } {
   // Untracked workspace notes are operator-trusted; filesystem writers already
   // own the host, while explicit flush quarantine stays sticky across edits.
@@ -365,7 +369,10 @@ function resolveDailyFileProvenance(params: {
     return { originClass: "untrusted", observedAt: params.recorded.observedAt };
   }
   if (params.recorded?.fileHash === params.currentHash) {
-    return { originClass: params.recorded.originClass, observedAt: params.recorded.observedAt };
+    return {
+      originClass: params.recorded.originClass,
+      observedAt: params.recorded.observedAt,
+    };
   }
   return { originClass: "agent", observedAt: params.defaultObservedAt };
 }
@@ -523,7 +530,10 @@ async function writeDailyIngestionState(
   await writeMemoryCoreWorkspaceEntries({
     namespace: DREAMING_DAILY_INGESTION_NAMESPACE,
     workspaceDir,
-    entries: Object.entries(state.files).map(([key, value]) => ({ key, value })),
+    entries: Object.entries(state.files).map(([key, value]) => ({
+      key,
+      value,
+    })),
   });
 }
 
@@ -546,7 +556,11 @@ async function readSessionIngestionState(workspaceDir: string): Promise<SessionI
       namespace: DREAMING_SESSION_INGESTION_FILES_NAMESPACE,
       workspaceDir,
     }),
-    readMemoryCoreWorkspaceEntries<{ scope: string; index: number; hashes: string[] }>({
+    readMemoryCoreWorkspaceEntries<{
+      scope: string;
+      index: number;
+      hashes: string[];
+    }>({
       namespace: DREAMING_SESSION_INGESTION_SEEN_NAMESPACE,
       workspaceDir,
     }),
@@ -594,7 +608,10 @@ async function writeSessionIngestionState(
     writeMemoryCoreWorkspaceEntries({
       namespace: DREAMING_SESSION_INGESTION_FILES_NAMESPACE,
       workspaceDir,
-      entries: Object.entries(state.files).map(([key, value]) => ({ key, value })),
+      entries: Object.entries(state.files).map(([key, value]) => ({
+        key,
+        value,
+      })),
     }),
     writeMemoryCoreWorkspaceEntries({
       namespace: DREAMING_SESSION_INGESTION_SEEN_NAMESPACE,
@@ -798,7 +815,9 @@ async function collectSessionIngestionBatches(params: {
   const cutoffMs = calculateLookbackCutoffMs(params.nowMs, params.lookbackDays);
   const batchByDay = new Map<string, SessionIngestionMessage[]>();
   const nextFiles: Record<string, SessionIngestionFileState> = {};
-  const nextSeenMessages: Record<string, string[]> = { ...params.state.seenMessages };
+  const nextSeenMessages: Record<string, string[]> = {
+    ...params.state.seenMessages,
+  };
   let changed = false;
 
   const sessionFiles: Array<{
@@ -1171,7 +1190,11 @@ async function collectSessionIngestionBatches(params: {
 
   return {
     batches,
-    nextState: { version: 3, files: nextFiles, seenMessages: trimmedSeenMessages },
+    nextState: {
+      version: 3,
+      files: nextFiles,
+      seenMessages: trimmedSeenMessages,
+    },
     changed,
   };
 }
@@ -1238,7 +1261,10 @@ async function collectDailyIngestionBatches(params: {
     fileHash: string;
     originClass: "agent" | "untrusted";
     observedAt: number;
-  }>({ namespace: DREAMING_DAILY_PROVENANCE_NAMESPACE, workspaceDir: params.workspaceDir });
+  }>({
+    namespace: DREAMING_DAILY_PROVENANCE_NAMESPACE,
+    workspaceDir: params.workspaceDir,
+  });
   const provenanceByPath = new Map(provenanceEntries.map((entry) => [entry.key, entry.value]));
   const memoryDir = path.join(params.workspaceDir, "memory");
   const cutoffMs = calculateLookbackCutoffMs(params.nowMs, params.lookbackDays);
@@ -1436,7 +1462,10 @@ export async function seedHistoricalDailyMemorySignals(params: {
     fileHash: string;
     originClass: "agent" | "untrusted";
     observedAt: number;
-  }>({ namespace: DREAMING_DAILY_PROVENANCE_NAMESPACE, workspaceDir: params.workspaceDir });
+  }>({
+    namespace: DREAMING_DAILY_PROVENANCE_NAMESPACE,
+    workspaceDir: params.workspaceDir,
+  });
   const provenanceByPath = new Map(provenanceEntries.map((entry) => [entry.key, entry.value]));
 
   const resolved = normalizedPaths
@@ -1444,7 +1473,12 @@ export async function seedHistoricalDailyMemorySignals(params: {
       const fileName = path.basename(filePath);
       const file = parseDailyMemoryFileName(fileName);
       if (!file) {
-        return { filePath, fileName, relativePath: "", file: null as DailyMemoryFile | null };
+        return {
+          filePath,
+          fileName,
+          relativePath: "",
+          file: null as DailyMemoryFile | null,
+        };
       }
       return {
         filePath,
@@ -1727,7 +1761,10 @@ function buildRemReflections(
       if (!tag || REM_REFLECTION_TAG_BLACKLIST.has(tag.toLowerCase())) {
         continue;
       }
-      const stat = tagStats.get(tag) ?? { count: 0, evidence: new Set<string>() };
+      const stat = tagStats.get(tag) ?? {
+        count: 0,
+        evidence: new Set<string>(),
+      };
       stat.count += 1;
       stat.evidence.add(`${entry.path}:${entry.startLine}-${entry.endLine}`);
       tagStats.set(tag, stat);
@@ -1830,7 +1867,10 @@ async function runLightDreaming(params: {
       workspaceDir: params.workspaceDir,
       nowMs,
       entries: filterRecallEntriesWithinLookback({
-        entries: await readShortTermRecallEntries({ workspaceDir: params.workspaceDir, nowMs }),
+        entries: await readShortTermRecallEntries({
+          workspaceDir: params.workspaceDir,
+          nowMs,
+        }),
         nowMs,
         lookbackDays: params.config.lookbackDays,
       }),
@@ -1909,6 +1949,7 @@ async function runRemDreaming(params: {
   nowMs?: number;
 }): Promise<DreamNarrativeOutcome> {
   const nowMs = Number.isFinite(params.nowMs) ? (params.nowMs as number) : Date.now();
+
   await ingestDailyMemorySignals({
     workspaceDir: params.workspaceDir,
     lookbackDays: dailyIngestionLookbackDays(params.config.lookbackDays),
@@ -1927,7 +1968,10 @@ async function runRemDreaming(params: {
   const allEntries = await filterLiveShortTermRecallEntries({
     workspaceDir: params.workspaceDir,
     entries: filterRecallEntriesWithinLookback({
-      entries: await readShortTermRecallEntries({ workspaceDir: params.workspaceDir, nowMs }),
+      entries: await readShortTermRecallEntries({
+        workspaceDir: params.workspaceDir,
+        nowMs,
+      }),
       nowMs,
       lookbackDays: params.config.lookbackDays,
     }),
