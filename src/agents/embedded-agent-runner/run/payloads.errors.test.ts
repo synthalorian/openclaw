@@ -25,9 +25,7 @@ describe("buildEmbeddedRunPayloads", () => {
   },
   "request_id": "req_011CX7DwS7tSvggaNHmefwWg"
 }`;
-  const makeAssistant = (
-    overrides: Partial<AssistantMessage>,
-  ): AssistantMessage =>
+  const makeAssistant = (overrides: Partial<AssistantMessage>): AssistantMessage =>
     // Default to an overloaded provider error so each test can override only
     // the assistant fields relevant to user-visible payload sanitization.
     makeAssistantMessageFixture({
@@ -42,9 +40,7 @@ describe("buildEmbeddedRunPayloads", () => {
       content: [],
     });
 
-  const expectOverloadedFallback = (
-    payloads: ReturnType<typeof buildPayloads>,
-  ) => {
+  const expectOverloadedFallback = (payloads: ReturnType<typeof buildPayloads>) => {
     // Overloaded JSON is normalized into stable copy rather than replayed as a
     // raw provider object.
     expect(payloads).toHaveLength(1);
@@ -55,9 +51,7 @@ describe("buildEmbeddedRunPayloads", () => {
     payloads: ReturnType<typeof buildPayloads>,
     needle: string,
   ) => {
-    expect(
-      payloads.map((payload) => payload.text ?? "").join("\n"),
-    ).not.toContain(needle);
+    expect(payloads.map((payload) => payload.text ?? "").join("\n")).not.toContain(needle);
   };
 
   function expectSinglePayloadSummary(
@@ -138,9 +132,7 @@ describe("buildEmbeddedRunPayloads", () => {
     });
 
     expectOverloadedFallback(payloads);
-    expect(payloads.map((payload) => payload.text)).not.toContain(
-      errorJsonPretty,
-    );
+    expect(payloads.map((payload) => payload.text)).not.toContain(errorJsonPretty);
   });
 
   it("suppresses raw error JSON from fallback assistant text", () => {
@@ -169,10 +161,7 @@ describe("buildEmbeddedRunPayloads", () => {
       isError: true,
     });
     expectNoPayloadTextContaining(payloads, "request ID");
-    expectNoPayloadTextContaining(
-      payloads,
-      "req_synthetic_provider_request_001",
-    );
+    expectNoPayloadTextContaining(payloads, "req_synthetic_provider_request_001");
   });
 
   it("suppresses raw assistant error messages in user-facing reply payloads", () => {
@@ -347,8 +336,7 @@ describe("buildEmbeddedRunPayloads", () => {
   it("surfaces OpenAI model capacity errors instead of generic empty-response copy", () => {
     const payloads = buildPayloads({
       lastAssistant: makeAssistant({
-        errorMessage:
-          "Selected model is at capacity. Please try a different model.",
+        errorMessage: "Selected model is at capacity. Please try a different model.",
         content: [],
       }),
     });
@@ -423,10 +411,7 @@ describe("buildEmbeddedRunPayloads", () => {
       isError: true,
     });
     expectNoPayloadTextContaining(payloads, "partial hidden reasoning");
-    expectNoPayloadTextContaining(
-      payloads,
-      "partial answer that should not leak",
-    );
+    expectNoPayloadTextContaining(payloads, "partial answer that should not leak");
   });
 
   it("preserves aborted-without-error behavior without adding a generic error payload", () => {
@@ -481,16 +466,11 @@ describe("buildEmbeddedRunPayloads", () => {
       lastAssistant: makeAssistant({
         stopReason: "stop",
         errorMessage: "insufficient credits for embedding model",
-        content: [
-          { type: "text", text: "Handle payment required errors in your API." },
-        ],
+        content: [{ type: "text", text: "Handle payment required errors in your API." }],
       }),
     });
 
-    expectSinglePayloadText(
-      payloads,
-      "Handle payment required errors in your API.",
-    );
+    expectSinglePayloadText(payloads, "Handle payment required errors in your API.");
   });
 
   it("suppresses raw error JSON even when errorMessage is missing", () => {
@@ -698,10 +678,9 @@ describe("buildEmbeddedRunPayloads", () => {
     expect(payloads[1]?.isError).toBe(true);
     expect(payloads[1]?.text).toContain("Write");
     expect(payloads[1]?.text).not.toContain("missing");
-    expect(
-      getReplyPayloadMetadata(payloads[1] as object)
-        ?.nonTerminalToolErrorWarning,
-    ).toBe(undefined);
+    expect(getReplyPayloadMetadata(payloads[1] as object)?.nonTerminalToolErrorWarning).toBe(
+      undefined,
+    );
   });
 
   it("still shows write tool errors when timedOut is true but no fileTarget was recorded", () => {
@@ -762,9 +741,7 @@ describe("buildEmbeddedRunPayloads", () => {
   it("does not warn for exec-like tool errors when a successful user-facing reply exists", () => {
     // Production repro: mid-run bash/exec failure recovered with a correct final answer.
     const payloads = buildPayloads({
-      assistantTexts: [
-        "The script is ready to use and saved in your workspace.",
-      ],
+      assistantTexts: ["The script is ready to use and saved in your workspace."],
       lastAssistant: { stopReason: "end_turn" } as unknown as AssistantMessage,
       lastToolError: {
         toolName: "exec",
@@ -847,9 +824,7 @@ describe("buildEmbeddedRunPayloads", () => {
 
   it("keeps exec-like tool error warnings when messaging-tool targets show no visible delivery", () => {
     const payloads = buildPayloads({
-      messagingToolSentTargets: [
-        { tool: "message", provider: "slack", to: "C123", text: " " },
-      ],
+      messagingToolSentTargets: [{ tool: "message", provider: "slack", to: "C123", text: " " }],
       lastToolError: {
         toolName: "exec",
         error: "command failed with exit code 1",
@@ -923,8 +898,7 @@ describe("buildEmbeddedRunPayloads", () => {
   });
 
   it("shows mutating tool errors when assistant says it did not find issues in the file", () => {
-    const text =
-      "I did not find any issues in the file. The update is complete.";
+    const text = "I did not find any issues in the file. The update is complete.";
     const payloads = buildPayloads({
       assistantTexts: [text],
       lastAssistant: { stopReason: "end_turn" } as unknown as AssistantMessage,
@@ -941,24 +915,21 @@ describe("buildEmbeddedRunPayloads", () => {
   it.each([
     "I did not need to update the file; it is already correct.",
     "I did not have to edit the file because it was already correct.",
-  ])(
-    "shows mutating tool errors when assistant output uses no-op phrasing: %s",
-    (text) => {
-      const payloads = buildPayloads({
-        assistantTexts: [text],
-        lastAssistant: {
-          stopReason: "end_turn",
-        } as unknown as AssistantMessage,
-        lastToolError: { toolName: "edit", error: "file missing" },
-      });
+  ])("shows mutating tool errors when assistant output uses no-op phrasing: %s", (text) => {
+    const payloads = buildPayloads({
+      assistantTexts: [text],
+      lastAssistant: {
+        stopReason: "end_turn",
+      } as unknown as AssistantMessage,
+      lastToolError: { toolName: "edit", error: "file missing" },
+    });
 
-      expect(payloads).toHaveLength(2);
-      expect(payloads[0]?.text).toBe(text);
-      expect(payloads[1]?.isError).toBe(true);
-      expect(payloads[1]?.text).toContain("Edit");
-      expect(payloads[1]?.text).not.toContain("missing");
-    },
-  );
+    expect(payloads).toHaveLength(2);
+    expect(payloads[0]?.text).toBe(text);
+    expect(payloads[1]?.isError).toBe(true);
+    expect(payloads[1]?.text).toContain("Edit");
+    expect(payloads[1]?.text).not.toContain("missing");
+  });
 
   it("suppresses mutating tool errors when assistant output explicitly acknowledges the failed action", () => {
     const text = "I couldn't update the file, so no changes were applied.";
