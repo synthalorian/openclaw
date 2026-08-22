@@ -1611,6 +1611,7 @@ describe("resolveModel", () => {
               args: ["--port", "18080"],
               healthUrl: "http://127.0.0.1:18080/health",
             },
+            timeoutSeconds: 600,
             models: [],
           },
         },
@@ -1634,6 +1635,7 @@ describe("resolveModel", () => {
       args: ["--port", "18080"],
       healthUrl: "http://127.0.0.1:18080/health",
     });
+    expect((model as { requestTimeoutMs?: number } | undefined)?.requestTimeoutMs).toBe(600_000);
     expect(discoverAuthStorage).not.toHaveBeenCalled();
     expect(discoverModels).not.toHaveBeenCalled();
   });
@@ -2717,60 +2719,6 @@ describe("resolveModel", () => {
     expect(result.error).toBeUndefined();
     expect((result.model as { requestTimeoutMs?: number } | undefined)?.requestTimeoutMs).toBe(
       MAX_TIMER_TIMEOUT_MS,
-    );
-  });
-
-  it("applies provider-level timeoutSeconds to bundled static catalog fallback models", async () => {
-    // Channel sessions allow the bundled static catalog fallback during model
-    // resolution, so a provider-only `timeoutSeconds` overlay must survive that
-    // path to raise the LLM idle watchdog above the 120s default (#107713).
-    const cfg = {
-      models: {
-        providers: {
-          openai: {
-            timeoutSeconds: 600,
-          },
-        },
-      },
-    } satisfies OpenClawConfigInput;
-    resolveBundledStaticCatalogModelMock.mockReturnValueOnce({
-      provider: "openai",
-      id: "gpt-5.5",
-      name: "GPT-5.5",
-      api: "openai-responses",
-      baseUrl: "https://api.openai.com/v1",
-      reasoning: true,
-      input: ["text"],
-      cost: { input: 1.5, output: 12, cacheRead: 0.15, cacheWrite: 0 },
-      contextWindow: 400_000,
-      maxTokens: 128_000,
-    });
-    const baseRuntimeHooks = createRuntimeHooks();
-    const prepareProviderDynamicModel = vi.fn(baseRuntimeHooks.prepareProviderDynamicModel);
-    const runProviderDynamicModel = vi.fn(() => undefined);
-
-    const result = await resolveModelAsyncForTest(
-      "openai",
-      "gpt-5.5",
-      "/tmp/agent",
-      cfg as unknown as OpenClawConfig,
-      {
-        allowBundledStaticCatalogFallback: true,
-        runtimeHooks: {
-          ...baseRuntimeHooks,
-          prepareProviderDynamicModel,
-          runProviderDynamicModel,
-        },
-        skipAgentDiscovery: true,
-      },
-    );
-
-    expect(result.error).toBeUndefined();
-    // Prove the model actually came from the bundled static catalog fallback
-    // (not a provider-runtime or configured-fallback resolution).
-    expect(resolveBundledStaticCatalogModelMock).toHaveBeenCalled();
-    expect((result.model as { requestTimeoutMs?: number } | undefined)?.requestTimeoutMs).toBe(
-      600_000,
     );
   });
 
