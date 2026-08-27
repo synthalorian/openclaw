@@ -2,9 +2,11 @@ import { resolveHumanDelayConfig } from "openclaw/plugin-sdk/agent-runtime";
 import {
   createChannelInboundEnvelopeBuilder,
   hasFinalInboundReplyDispatch,
+  resolveInboundReplyDispatchCounts,
 } from "openclaw/plugin-sdk/channel-inbound";
 import { resolveChannelContextVisibilityMode } from "openclaw/plugin-sdk/context-visibility-runtime";
 import { KeyedAsyncQueue } from "openclaw/plugin-sdk/keyed-async-queue";
+import { getGlobalHookRunner } from "openclaw/plugin-sdk/plugin-runtime";
 import { resolveInboundLastRouteSessionKey } from "openclaw/plugin-sdk/routing";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "openclaw/plugin-sdk/security-runtime";
 import { resolveStorePath } from "openclaw/plugin-sdk/session-store-runtime";
@@ -56,7 +58,6 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
     streaming,
     previewToolProgressEnabled,
     blockStreamingEnabled,
-    textLimit,
     historyLimit,
     startupMs,
     startupGraceMs,
@@ -153,11 +154,14 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       const eventTs = event.origin_server_ts;
       const eventAge = event.unsigned?.age;
       const commitInboundEventIfClaimed = async () => {
-        if (!inboundReplayClaim) {
+        const claim = inboundReplayClaim;
+        if (!claim) {
           return;
         }
-        await inboundReplayClaim.commit();
-        inboundReplayClaim = undefined;
+        await claim.commit();
+        if (inboundReplayClaim === claim) {
+          inboundReplayClaim = undefined;
+        }
       };
       const readIngressPrefix = () =>
         readMatrixIngressPrefix({
@@ -287,11 +291,13 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         botLoopProtection,
         effectiveGroupAllowFrom,
         effectiveRoomUsers,
+        resolveMessageIngress,
       } = resolvedIngressResult;
 
       // Keep the per-room ingress gate focused on ordering-sensitive state updates.
       // Prompt/session enrichment below can run concurrently after the history snapshot is fixed.
       const inboundContext = await resolveMatrixInboundContext({
+        resolveMessageIngress,
         client,
         core,
         cfg,
@@ -348,11 +354,6 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         replyTarget,
         sharedDmContextNotice,
       } = inboundContext;
-      const tableMode = core.channel.text.resolveMarkdownTableMode({
-        cfg,
-        channel: "matrix",
-        accountId: _route.accountId,
-      });
       const mediaLocalRoots = getAgentScopedMediaLocalRoots(cfg, _route.agentId);
       const { onModelSelected, ...prefixOptions } = createReplyPrefixOptions({
         cfg,
@@ -388,9 +389,16 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
           });
         },
       });
+      // Matrix drafts are provider-visible before outbound modifiers run. Keep them off when a
+      // hook can rewrite or cancel so the original payload cannot escape the delivery gate.
+      const hookRunner = getGlobalHookRunner();
+      const allowProviderPreview = !(
+        (hookRunner?.hasHooks("reply_payload_sending") ?? false) ||
+        (hookRunner?.hasHooks("message_sending") ?? false)
+      );
       const draftController = await createMatrixDraftController({
-        streaming,
-        previewToolProgressEnabled,
+        streaming: allowProviderPreview ? streaming : "off",
+        previewToolProgressEnabled: allowProviderPreview && previewToolProgressEnabled,
         replyToMode,
         messageId,
         threadTarget,
@@ -414,13 +422,11 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         client,
         roomId,
         runtime,
-        textLimit,
         replyToMode,
         threadTarget,
         replyToEventId: replyToEventId ?? undefined,
         accountId: _route.accountId,
         mediaLocalRoots,
-        tableMode,
         logVerboseMessage,
       });
       const { deliverReply, onReplyError, turnDispatcherOptions } = replyDispatcher;
@@ -439,11 +445,39 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         route: _route,
         sessionKey: _route.sessionKey,
       });
+      const replayClaimAtDispatch = inboundReplayClaim;
+      // Active-run deferral outlives this handler. Transfer the exact replay claim to the
+      // reply lane so adoption commits it and abandonment reopens it for Matrix replay.
+      const turnAdoptionLifecycle = replayClaimAtDispatch
+        ? {
+            admission: "exclusive" as const,
+            onDeferred: () => {
+              if (inboundReplayClaim !== replayClaimAtDispatch) {
+                return false;
+              }
+              inboundReplayClaim = undefined;
+              return undefined;
+            },
+            onAdopted: async () => {
+              if (inboundReplayClaim === replayClaimAtDispatch) {
+                inboundReplayClaim = undefined;
+              }
+              await replayClaimAtDispatch.commit();
+            },
+            onAbandoned: () => {
+              if (inboundReplayClaim === replayClaimAtDispatch) {
+                inboundReplayClaim = undefined;
+              }
+              replayClaimAtDispatch.release();
+            },
+          }
+        : undefined;
 
       const turnResult = await core.channel.inbound.run({
         channel: "matrix",
         accountId: _route.accountId,
         raw: event,
+        ...(turnAdoptionLifecycle ? { turnAdoptionLifecycle } : {}),
         adapter: {
           ingest: () => ({
             id: messageId,
@@ -512,12 +546,13 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
               }
             },
             delivery: {
+              observeMessageSent: true,
               deliver: deliverReply,
               onError: (err, info) => onReplyError(err, info as Parameters<typeof onReplyError>[1]),
             },
             dispatcherOptions: {
               ...turnDispatcherOptions,
-              onSettled: () => draftController.progressDraftGate.cancel(),
+              onSettled: () => draftController.cancelProgressDraft(),
             },
             replyOptions: {
               skillFilter: roomConfig?.skills,
@@ -530,9 +565,10 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
               onBlockReplyQueued: draftStream
                 ? (payload, context) => {
                     if (payload.isCompactionNotice === true) {
-                      return;
+                      return false;
                     }
                     draftController.queueDraftBlockBoundary(payload, context);
+                    return false;
                   }
                 : undefined,
               // Reset draft boundary bookkeeping on assistant message
@@ -542,6 +578,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
                 ? () => {
                     draftController.resetDraftBlockOffsets();
                     draftController.resetPreviewToolProgress();
+                    return false;
                   }
                 : undefined,
               onQueuedFollowupAdmitted: draftStream
@@ -563,7 +600,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
         return;
       }
       const { dispatchResult } = turnResult;
-      const { queuedFinal, counts } = dispatchResult;
+      const { queuedFinal } = dispatchResult;
       if (replyDispatcher.finalReplyDeliveryFailed()) {
         logVerboseMessage(
           `matrix: final reply delivery failed room=${roomId} id=${messageId}; keeping replay committed`,
@@ -590,16 +627,24 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
           threadRootId ? thread.threadId : undefined,
         );
       }
-      if (!hasFinalInboundReplyDispatch({ queuedFinal, counts })) {
+      if (!hasFinalInboundReplyDispatch(dispatchResult)) {
         await commitInboundEventIfClaimed();
         return;
       }
-      const finalCount = counts.final;
+      const finalCount = resolveInboundReplyDispatchCounts(dispatchResult).final;
       logVerboseMessage(
         `matrix: delivered ${finalCount} reply${finalCount === 1 ? "" : "ies"} to ${replyTarget}`,
       );
       await commitInboundEventIfClaimed();
     } catch (err) {
+      const draftController = draftControllerRef;
+      if (
+        draftController?.draftStream?.eventId() &&
+        draftController.draftDisposition() === "active"
+      ) {
+        // A Matrix-accepted preview is the only visible reply after an abort.
+        draftController.markDraftRetained();
+      }
       runtime.error?.(`matrix handler failed: ${String(err)}`);
     } finally {
       // Stop the draft stream timer so partial drafts don't leak if the
@@ -607,7 +652,7 @@ export function createMatrixRoomMessageHandler(params: MatrixMonitorHandlerParam
       const draftStream = draftControllerRef?.draftStream;
       if (draftStream) {
         const draftEventId = await draftStream.stop().catch(() => undefined);
-        if (draftEventId && draftControllerRef?.isDraftConsumed() !== true) {
+        if (draftEventId && draftControllerRef?.draftDisposition() === "active") {
           await redactMatrixDraftEvent(client, roomId, draftEventId);
         }
       }

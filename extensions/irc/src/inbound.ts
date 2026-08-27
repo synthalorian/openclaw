@@ -1,6 +1,5 @@
 // Irc plugin module implements inbound behavior.
 import {
-  buildChannelInboundEventContext,
   logInboundDrop,
   resolveChannelInboundRouteEnvelope,
 } from "openclaw/plugin-sdk/channel-inbound";
@@ -35,6 +34,7 @@ import {
 import type { ResolvedIrcAccount } from "./accounts.js";
 import type { IrcIngressDispatchResult, IrcIngressLifecycle } from "./irc-ingress.js";
 import { buildIrcAllowlistCandidates, normalizeIrcAllowEntry } from "./normalize.js";
+import { sanitizeIrcAssistantText } from "./outbound-base.js";
 import { resolveIrcGroupMatch, resolveIrcGroupRequireMention } from "./policy.js";
 import { getIrcRuntime } from "./runtime.js";
 import { sendMessageIrc } from "./send.js";
@@ -46,6 +46,8 @@ type IrcGroupPolicy = "open" | "allowlist" | "disabled";
 
 const ircIngressIdentity = defineStableChannelIngressIdentity({
   key: "irc-id",
+  // The IRC server vouches for the connection prefix, but does not bind it to an account owner.
+  authentication: "asserted",
   normalizeEntry: normalizeIrcStableEntry,
   normalizeSubject: normalizeLowercaseStringOrEmpty,
   sensitivity: "pii",
@@ -55,13 +57,14 @@ const ircIngressIdentity = defineStableChannelIngressIdentity({
       kind: "stable-id" as const,
       normalizeEntry: normalizeIrcNickUserEntry,
       normalizeSubject: normalizeLowercaseStringOrEmpty,
-      dangerous: true,
+      authentication: "mutable",
       sensitivity: "pii" as const,
     },
     {
       key: "irc-id-nick-host",
       kind: "stable-id" as const,
-      normalizeEntry: () => null,
+      authentication: "asserted",
+      normalizeEntry: normalizeIrcNickHostEntry,
       normalizeSubject: normalizeLowercaseStringOrEmpty,
       sensitivity: "pii" as const,
     },
@@ -70,7 +73,7 @@ const ircIngressIdentity = defineStableChannelIngressIdentity({
       kind: IRC_NICK_KIND,
       normalizeEntry: normalizeIrcNickEntry,
       normalizeSubject: normalizeLowercaseStringOrEmpty,
-      dangerous: true,
+      authentication: "mutable",
       sensitivity: "pii",
     },
   ],
@@ -80,6 +83,27 @@ const ircIngressIdentity = defineStableChannelIngressIdentity({
 });
 
 const escapeIrcRegexLiteral = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+// IRC nicknames permit punctuation, so ASCII word boundaries lose valid leading/trailing chars.
+const IRC_NICK_CHARACTER = String.raw`[A-Za-z0-9_\-\[\]\\\x60^{}|~]`;
+const IRC_RFC1459_CASE_EQUIVALENTS = new Map([
+  ["[", "{"],
+  ["{", "["],
+  ["]", "}"],
+  ["}", "]"],
+  ["\\", "|"],
+  ["|", "\\"],
+  ["^", "~"],
+  ["~", "^"],
+]);
+
+function buildIrcNickMentionPattern(value: string): string {
+  return Array.from(value, (character) => {
+    const equivalent = IRC_RFC1459_CASE_EQUIVALENTS.get(character);
+    return equivalent
+      ? `[${escapeIrcRegexLiteral(character)}${escapeIrcRegexLiteral(equivalent)}]`
+      : escapeIrcRegexLiteral(character);
+  }).join("");
+}
 
 function isBareNick(value: string): boolean {
   return !value.includes("!") && !value.includes("@");
@@ -95,10 +119,15 @@ function isHostlessNickUser(value: string): boolean {
 
 function normalizeIrcStableEntry(value: string): string | null {
   const normalized = normalizeIrcAllowEntry(value);
-  if (!normalized || normalized === "*" || !hasVerifiedHost(normalized)) {
+  if (!normalized.includes("!") || !hasVerifiedHost(normalized)) {
     return null;
   }
   return normalized;
+}
+
+function normalizeIrcNickHostEntry(value: string): string | null {
+  const normalized = normalizeIrcAllowEntry(value);
+  return !normalized.includes("!") && hasVerifiedHost(normalized) ? normalized : null;
 }
 
 function normalizeIrcNickUserEntry(value: string): string | null {
@@ -180,7 +209,10 @@ async function deliverIrcReply(params: {
   statusSink?: (patch: { lastOutboundAt?: number }) => void;
 }) {
   await deliverFormattedTextWithAttachments({
-    payload: params.payload,
+    payload: {
+      ...params.payload,
+      text: sanitizeIrcAssistantText(params.payload.text ?? ""),
+    },
     send: async ({ text, replyToId }) => {
       if (params.sendReply) {
         await params.sendReply(params.target, text, replyToId);
@@ -262,7 +294,10 @@ export async function handleIrcInbound(params: {
   const mentionRegexes = core.channel.mentions.buildMentionRegexes(config as OpenClawConfig);
   const mentionNick = connectedNick?.trim() || account.nick;
   const explicitMentionRegex = mentionNick
-    ? new RegExp(`\\b${escapeIrcRegexLiteral(mentionNick)}\\b[:,]?`, "i")
+    ? new RegExp(
+        `(?<!${IRC_NICK_CHARACTER})${buildIrcNickMentionPattern(mentionNick)}(?!${IRC_NICK_CHARACTER})[:,]?`,
+        "i",
+      )
     : null;
   const wasMentioned =
     core.channel.mentions.matchesMentionPatterns(rawBody, mentionRegexes) ||
@@ -280,6 +315,20 @@ export async function handleIrcInbound(params: {
     (hasEntries(account.config.groupAllowFrom) || hasEntries(routeGroupAllowFrom))
       ? "allowlist"
       : groupPolicy;
+  const channelTarget =
+    message.target.startsWith("#") || message.target.startsWith("&")
+      ? message.target
+      : `#${message.target}`;
+  const peerId = message.isGroup ? channelTarget : message.senderNick;
+  const { route, buildEnvelope } = resolveChannelInboundRouteEnvelope({
+    cfg: config as OpenClawConfig,
+    channel: CHANNEL_ID,
+    accountId: account.accountId,
+    peer: {
+      kind: message.isGroup ? "group" : "direct",
+      id: peerId,
+    },
+  });
   const access = await createChannelIngressResolver({
     channelId: CHANNEL_ID,
     accountId: account.accountId,
@@ -291,6 +340,12 @@ export async function handleIrcInbound(params: {
     conversation: {
       kind: message.isGroup ? "group" : "direct",
       id: message.target,
+    },
+    contextBinding: {
+      agentId: route.agentId,
+      sessionKey: route.sessionKey,
+      ...(message.messageId ? { messageId: message.messageId } : {}),
+      inboundEventKind: "user_request",
     },
     route: routeDescriptorsForIrcGroup({
       isGroup: message.isGroup,
@@ -388,21 +443,6 @@ export async function handleIrcInbound(params: {
     };
   }
 
-  const channelTarget =
-    message.target.startsWith("#") || message.target.startsWith("&")
-      ? message.target
-      : `#${message.target}`;
-  const peerId = message.isGroup ? channelTarget : message.senderNick;
-  const { route, buildEnvelope } = resolveChannelInboundRouteEnvelope({
-    cfg: config as OpenClawConfig,
-    channel: CHANNEL_ID,
-    accountId: account.accountId,
-    peer: {
-      kind: message.isGroup ? "group" : "direct",
-      id: peerId,
-    },
-  });
-
   const fromLabel = message.isGroup ? message.target : senderDisplay;
   const body = buildEnvelope({
     channel: "IRC",
@@ -414,7 +454,8 @@ export async function handleIrcInbound(params: {
   const groupSystemPrompt = normalizeOptionalString(groupMatch.groupConfig?.systemPrompt);
   const blockStreamingEnabled = resolveChannelStreamingBlockEnabled(account.config);
 
-  const ctxPayload = buildChannelInboundEventContext({
+  const ctxPayload = core.channel.inbound.buildContext({
+    channelIngress: access,
     channel: CHANNEL_ID,
     accountId: route.accountId,
     messageId: message.messageId,

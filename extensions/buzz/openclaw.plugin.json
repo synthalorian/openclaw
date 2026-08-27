@@ -6,6 +6,12 @@
     "onStartup": false
   },
   "channels": ["buzz"],
+  "qaRunners": [
+    {
+      "commandName": "buzz",
+      "description": "Run the Buzz live QA lane against a dedicated relay room"
+    }
+  ],
   "channelConfigs": {
     "buzz": {
       "label": "Buzz",
@@ -19,6 +25,9 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "responsePrefix": {
+            "type": "string"
           },
           "markdown": {
             "type": "object",
@@ -192,6 +201,11 @@
               ]
             }
           },
+          "historyLimit": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
           "groups": {
             "type": "object",
             "propertyNames": {
@@ -206,6 +220,23 @@
                 },
                 "requireMention": {
                   "type": "boolean"
+                },
+                "groupPolicy": {
+                  "type": "string",
+                  "enum": ["open", "disabled", "allowlist"]
+                },
+                "groupAllowFrom": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ]
+                  }
                 }
               },
               "additionalProperties": false

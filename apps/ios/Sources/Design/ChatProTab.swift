@@ -56,85 +56,72 @@ struct ChatProTab: View {
     let headerSidebarAction: OpenClawSidebarHeaderAction?
     let headerTitle: String?
     let showsAgentBadge: Bool
-    let ownsNavigationStack: Bool
     let openSettings: (() -> Void)?
 
     init(
         headerSidebarAction: OpenClawSidebarHeaderAction? = nil,
         headerTitle: String? = nil,
         showsAgentBadge: Bool = true,
-        ownsNavigationStack: Bool = true,
         openSettings: (() -> Void)? = nil)
     {
         self.headerSidebarAction = headerSidebarAction
         self.headerTitle = headerTitle
         self.showsAgentBadge = showsAgentBadge
-        self.ownsNavigationStack = ownsNavigationStack
         self.openSettings = openSettings
     }
 
     var body: some View {
-        Group {
-            if self.ownsNavigationStack {
-                NavigationStack {
-                    self.content
-                }
-            } else {
-                // Phone and iPad hosts already provide a NavigationStack. Keep
-                // one native bar so embedded Chat never grows duplicate chrome.
-                self.content
-            }
-        }
-        .task {
-            await self.appModel.restoreChatSessionRoutingIdentityIfNeeded()
-            self.syncChatViewModel()
-            await self.handleNewChatRequest(self.appModel.newChatRequestID)
-            if self.speech == nil {
-                let gateway = self.appModel.operatorSession
-                self.speech = OpenClawChatSpeechController { text in
-                    try await ChatMessageSpeechClient.synthesize(text: text, gateway: gateway)
+        self.content
+            .task {
+                await self.appModel.restoreChatSessionRoutingIdentityIfNeeded()
+                self.syncChatViewModel()
+                await self.handleNewChatRequest(self.appModel.newChatRequestID)
+                if self.speech == nil {
+                    let gateway = self.appModel.operatorSession
+                    self.speech = OpenClawChatSpeechController { text in
+                        try await ChatMessageSpeechClient.synthesize(text: text, gateway: gateway)
+                    }
                 }
             }
-        }
-        .onChange(of: self.appModel.chatSessionKey) { _, _ in
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.appModel.chatViewModelOwnerID) { _, _ in
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.appModel.chatAgentId) { _, _ in
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.appModel.gatewayDefaultAgentId) { _, _ in
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.appModel.chatSessionRoutingContract) { _, _ in
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.appModel.voiceNoteRecorder.ownsPendingChatAttachment) { _, _ in
-            self.viewModel?.attachmentOwnerActivityChanged()
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.viewModel?.isAttachmentOwnerPinned) { _, pinned in
-            guard pinned == false else { return }
-            self.syncChatViewModel()
-        }
-        .onChange(of: self.appModel.isAppleReviewDemoModeEnabled) { _, _ in
-            self.syncChatViewModel()
-            self.viewModel?.refresh()
-        }
-        .onChange(of: self.appModel.isScreenshotFixtureModeEnabled) { _, _ in
-            self.syncChatViewModel()
-            self.viewModel?.refresh()
-        }
-        .onChange(of: self.appModel.isOperatorGatewayConnected) { _, connected in
-            guard connected else { return }
-            self.syncChatViewModel()
-            self.viewModel?.refresh()
-        }
-        .onChange(of: self.appModel.newChatRequestID) { _, requestID in
-            Task { await self.handleNewChatRequest(requestID) }
-        }
+            .onChange(of: self.appModel.chatSessionKey) { _, _ in
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.appModel.chatViewModelOwnerID) { _, _ in
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.appModel.chatAgentId) { _, _ in
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.appModel.gatewayDefaultAgentId) { _, _ in
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.appModel.chatSessionRoutingContract) { _, _ in
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.appModel.voiceNoteRecorder.ownsPendingChatAttachment) { _, _ in
+                self.viewModel?.attachmentOwnerActivityChanged()
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.viewModel?.isAttachmentOwnerPinned) { _, pinned in
+                guard pinned == false else { return }
+                self.syncChatViewModel()
+            }
+            .onChange(of: self.appModel.isAppleReviewDemoModeEnabled) { _, _ in
+                self.syncChatViewModel()
+                self.viewModel?.refresh()
+            }
+            .onChange(of: self.appModel.isScreenshotFixtureModeEnabled) { _, _ in
+                self.syncChatViewModel()
+                self.viewModel?.refresh()
+            }
+            .onChange(of: self.appModel.isOperatorGatewayConnected) { _, connected in
+                guard connected else { return }
+                self.syncChatViewModel()
+                self.viewModel?.refresh()
+            }
+            .onChange(of: self.appModel.newChatRequestID) { _, requestID in
+                Task { await self.handleNewChatRequest(requestID) }
+            }
     }
 
     private var content: some View {
@@ -235,11 +222,16 @@ struct ChatProTab: View {
                     ? self.dictationControl
                     : nil,
                 voiceNoteControl: self.voiceNoteControl,
-                speech: self.speech)
+                speech: self.speech,
+                mediaPlaybackAllowed: {
+                    !self.appModel.talkMode.isEnabled &&
+                        !self.appModel.talkMode.hasActivePushToTalkSession &&
+                        !self.appModel.voiceNoteRecorder.ownsPendingChatAttachment
+                })
                 // iMessage-style grey bubbles for agent replies in the clean chrome.
-                    .environment(\.openClawAssistantBubblesInCleanChrome, true)
-                    .id(ObjectIdentifier(viewModel))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .environment(\.openClawAssistantBubblesInCleanChrome, true)
+                .id(ObjectIdentifier(viewModel))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else {
             ContentUnavailableView(
                 "Preparing Chat",
@@ -852,7 +844,7 @@ struct ChatProTab: View {
     }
 
     private var chatUserAccent: Color {
-        OpenClawBrand.accent
+        ColorHexSupport.color(fromHex: self.appModel.gatewayAccentColorHex) ?? OpenClawBrand.accent
     }
 
     private var isAttachmentOwnerPinned: Bool {

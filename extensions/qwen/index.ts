@@ -2,7 +2,7 @@
 import { createProviderApiKeyAuthMethod } from "openclaw/plugin-sdk/provider-auth-api-key";
 import { buildOpenAICompatibleLiveModelProviderConfig } from "openclaw/plugin-sdk/provider-catalog-live-runtime";
 import { defineSingleProviderPluginEntry } from "openclaw/plugin-sdk/provider-entry";
-import { applyQwenNativeStreamingUsageCompat } from "./api.js";
+import { normalizeLowercaseStringOrEmpty } from "openclaw/plugin-sdk/string-coerce-runtime";
 import { buildQwenMediaUnderstandingProvider } from "./media-understanding-provider.js";
 import {
   isQwenCodingPlanBaseUrl,
@@ -26,7 +26,7 @@ import {
 } from "./onboard.js";
 import { buildQwenProvider, buildQwenTokenPlanProvider } from "./provider-catalog.js";
 import { wrapQwenProviderStream } from "./stream.js";
-import { buildQwenVideoGenerationProvider } from "./video-generation-provider.js";
+import { qwenVideoGenerationProvider } from "./video-generation-provider.js";
 
 const PROVIDER_ID = "qwen";
 const LEGACY_PROVIDER_ID = "modelstudio";
@@ -43,10 +43,6 @@ const QWEN_TOKEN_PLAN_GLM_NO_MAX_THINKING_LEVEL_IDS = QWEN_TOKEN_PLAN_THINKING_L
   (id) => id !== "max",
 );
 
-function normalizeProviderId(value: string): string {
-  return value.trim().toLowerCase();
-}
-
 function resolveConfiguredQwenBaseUrl(
   config: { models?: { providers?: Record<string, { baseUrl?: string } | undefined> } } | undefined,
 ): string | undefined {
@@ -55,7 +51,7 @@ function resolveConfiguredQwenBaseUrl(
     return undefined;
   }
   for (const [providerId, provider] of Object.entries(providers)) {
-    const normalized = normalizeProviderId(providerId);
+    const normalized = normalizeLowercaseStringOrEmpty(providerId);
     if (normalized !== PROVIDER_ID && normalized !== LEGACY_PROVIDER_ID) {
       continue;
     }
@@ -75,7 +71,7 @@ function resolveConfiguredQwenTokenPlanBaseUrl(
     return undefined;
   }
   for (const [providerId, provider] of Object.entries(providers)) {
-    const normalized = normalizeProviderId(providerId);
+    const normalized = normalizeLowercaseStringOrEmpty(providerId);
     if (normalized !== QWEN_TOKEN_PLAN_PROVIDER_ID) {
       continue;
     }
@@ -262,8 +258,6 @@ export default defineSingleProviderPluginEntry({
       },
       staticRun: async () => ({ provider: buildQwenProvider() }),
     },
-    applyNativeStreamingUsageCompat: ({ providerConfig }) =>
-      applyQwenNativeStreamingUsageCompat(providerConfig),
     wrapStreamFn: wrapQwenProviderStream,
     normalizeConfig: ({ providerConfig }) => {
       if (!isQwenCodingPlanBaseUrl(providerConfig.baseUrl)) {
@@ -306,8 +300,6 @@ export default defineSingleProviderPluginEntry({
           provider: buildQwenTokenPlanProvider(),
         }),
       },
-      applyNativeStreamingUsageCompat: ({ providerConfig }) =>
-        applyQwenNativeStreamingUsageCompat(providerConfig),
       wrapStreamFn: wrapQwenProviderStream,
       resolveThinkingProfile: ({ modelId }) => resolveQwenTokenPlanThinkingProfile(modelId),
     });
@@ -316,11 +308,9 @@ export default defineSingleProviderPluginEntry({
       label: "Alibaba Token Plan (legacy custom config)",
       docsPath: "/providers/qwen",
       auth: [],
-      applyNativeStreamingUsageCompat: ({ providerConfig }) =>
-        applyQwenNativeStreamingUsageCompat(providerConfig),
       wrapStreamFn: wrapQwenProviderStream,
     });
     api.registerMediaUnderstandingProvider(buildQwenMediaUnderstandingProvider());
-    api.registerVideoGenerationProvider(buildQwenVideoGenerationProvider());
+    api.registerVideoGenerationProvider(qwenVideoGenerationProvider);
   },
 });

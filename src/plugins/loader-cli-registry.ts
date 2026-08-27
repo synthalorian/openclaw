@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { GatewayRequestHandler } from "../gateway/server-methods/types.js";
-import { openRootFileSync } from "../infra/boundary-file-read.js";
+import { describeRootFileOpenFailure, openRootFileSync } from "../infra/boundary-file-read.js";
 import { resolveUserPath } from "../utils.js";
-import { buildPluginApi } from "./api-builder.js";
+import { buildPluginApi, createUnavailableRuntime } from "./api-builder.js";
 import {
   resolveEffectiveEnableState,
   resolveEffectivePluginActivationState,
@@ -17,7 +17,7 @@ import {
   createPluginModuleLoader,
   formatBundledChannelWrongLoaderError,
   resolvePluginModuleExport,
-  runPluginRegisterSync,
+  runPluginRegisterSyncInRegistry,
 } from "./loader-module-runtime.js";
 import {
   formatAutoEnabledActivationReason,
@@ -39,19 +39,10 @@ import {
 import type { PluginLoadOptions } from "./loader-types.js";
 import { withProfile } from "./plugin-load-profile.js";
 import { normalizePluginPolicyId } from "./plugin-policy-id.js";
-import { createPluginRegistrationTransaction } from "./plugin-registration-transaction.js";
 import { createPluginIdScopeSet } from "./plugin-scope.js";
 import { createPluginRegistry, type PluginRecord, type PluginRegistry } from "./registry.js";
-import type { PluginRuntime } from "./runtime/types.js";
 import { hasKind, kindsEqual } from "./slots.js";
 import type { OpenClawPluginModule } from "./types.js";
-
-const CLI_METADATA_ENTRY_BASENAMES = [
-  "cli-metadata.ts",
-  "cli-metadata.js",
-  "cli-metadata.mjs",
-  "cli-metadata.cjs",
-] as const;
 
 export async function loadOpenClawPluginCliRegistry(
   options: PluginLoadOptions = {},
@@ -63,9 +54,9 @@ export async function loadOpenClawPluginCliRegistry(
     devSourceRoot: context.devSourceRoot,
     pluginSdkResolution: options.pluginSdkResolution,
   });
-  const { registry, registerCli } = createPluginRegistry({
+  const { registry, registerCli, rollbackPluginGlobalSideEffects } = createPluginRegistry({
     logger,
-    runtime: {} as PluginRuntime,
+    runtime: createUnavailableRuntime("cli-metadata"),
     coreGatewayHandlers: options.coreGatewayHandlers as Record<string, GatewayRequestHandler>,
     ...(options.coreGatewayMethodNames !== undefined && {
       coreGatewayMethodNames: options.coreGatewayMethodNames,
@@ -199,7 +190,7 @@ export async function loadOpenClawPluginCliRegistry(
       pushPluginLoadError(`invalid config: ${validatedConfig.error.join(", ")}`);
       continue;
     }
-    const cliMetadataSource = resolveCliMetadataEntrySource(candidate.rootDir);
+    const cliMetadataSource = resolveCliMetadataEntrySource(candidate.rootDir, candidate.source);
     const sourceForCliMetadata =
       candidate.origin === "bundled"
         ? cliMetadataSource
@@ -224,7 +215,14 @@ export async function loadOpenClawPluginCliRegistry(
       skipLexicalRootCheck: true,
     });
     if (!opened.ok) {
-      pushPluginLoadError("plugin entry path escapes plugin root or fails alias checks");
+      pushPluginLoadError(
+        describeRootFileOpenFailure({
+          failure: opened,
+          subject: "plugin entry path",
+          boundaryLabel: "plugin root",
+          filePath: sourceForCliMetadata,
+        }),
+      );
       continue;
     }
     const safeSource = opened.path;
@@ -316,23 +314,21 @@ export async function loadOpenClawPluginCliRegistry(
       registrationMode: "cli-metadata",
       config: context.cfg,
       pluginConfig: validatedConfig.value,
-      runtime: {} as PluginRuntime,
+      runtime: createUnavailableRuntime("cli-metadata", record.id),
       logger,
       resolvePath: (input) => resolveUserPath(input),
       handlers: {
         registerCli: (registrar, opts) => registerCli(record, registrar, opts),
       },
     });
-    const transaction = createPluginRegistrationTransaction({ registry });
     try {
       withProfile({ pluginId: record.id, source: record.source }, "cli-metadata:register", () =>
-        runPluginRegisterSync(register, api),
+        runPluginRegisterSyncInRegistry(register, api, registry, record.id),
       );
       registry.plugins.push(record);
       seenIds.set(pluginId, candidate.origin);
-      transaction.commit({ activate: true });
     } catch (error) {
-      transaction.rollback();
+      rollbackPluginGlobalSideEffects(record.id, record);
       recordPluginError({
         logger,
         registry,
@@ -350,11 +346,13 @@ export async function loadOpenClawPluginCliRegistry(
   return registry;
 }
 
-function resolveCliMetadataEntrySource(rootDir: string): string | null {
-  for (const basename of CLI_METADATA_ENTRY_BASENAMES) {
-    const candidate = path.join(rootDir, basename);
-    if (fs.existsSync(candidate)) {
-      return candidate;
+function resolveCliMetadataEntrySource(rootDir: string, source: string): string | null {
+  for (const directory of new Set([rootDir, path.dirname(source)])) {
+    for (const extension of [".ts", ".js", ".mjs", ".cjs"]) {
+      const candidate = path.join(directory, `cli-metadata${extension}`);
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
     }
   }
   return null;

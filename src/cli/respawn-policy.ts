@@ -1,6 +1,6 @@
 // CLI respawn skip policy for help, interactive TTY commands, and foreground Gateway runs.
 import { resolveCliArgvInvocation } from "./argv-invocation.js";
-import { getCommandPositionalsWithRootOptions } from "./argv.js";
+import { getCommandPathWithRootOptions, getCommandPositionalsWithRootOptions } from "./argv.js";
 
 const GATEWAY_RUN_BOOLEAN_FLAGS = [
   "--allow-unconfigured",
@@ -29,7 +29,12 @@ const GATEWAY_RUN_VALUE_FLAGS = [
 
 const INTERACTIVE_TTY_COMMANDS = new Set(["tui", "terminal", "chat"]);
 
-function isNativeHookRelayArgv(argv: string[]): boolean {
+/** Gmail owns a shutdown grace period longer than the generic respawn wrapper allows. */
+export function isForegroundGmailRunArgv(argv: string[]): boolean {
+  return getCommandPathWithRootOptions(argv, 3).join(" ") === "webhooks gmail run";
+}
+
+export function isNativeHookRelayArgv(argv: string[]): boolean {
   const { commandPath } = resolveCliArgvInvocation(argv);
   return commandPath[0] === "hooks" && commandPath[1] === "relay";
 }
@@ -77,6 +82,7 @@ export function shouldSkipRespawnForArgv(
   return (
     invocation.hasHelpOrVersion ||
     isInteractiveTtyCommandArgv(argv) ||
+    isForegroundGmailRunArgv(argv) ||
     shouldKeepNativeHookRelayInProcess(argv, platform) ||
     (invocation.primary === "gateway" && isForegroundGatewayRunArgv(argv))
   );
@@ -90,6 +96,7 @@ export function shouldSkipStartupEnvironmentRespawnForArgv(
   const invocation = resolveCliArgvInvocation(argv);
   return (
     invocation.hasHelpOrVersion ||
+    isForegroundGmailRunArgv(argv) ||
     // Codex owns the relay subprocess timeout. A detached startup respawn can
     // outlive the launcher when Codex kills it, stranding the relay child.
     shouldKeepNativeHookRelayInProcess(argv, platform) ||

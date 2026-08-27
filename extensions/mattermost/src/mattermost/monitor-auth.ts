@@ -20,6 +20,8 @@ const MATTERMOST_USER_NAME_KIND =
   "plugin:mattermost-user-name" as const satisfies ChannelIngressIdentifierKind;
 const mattermostIngressIdentity = {
   key: "sender-id",
+  // Authenticated Mattermost WebSocket post events carry the server-owned post.user_id.
+  authentication: "verified",
   normalize: normalizeMattermostAllowEntry,
   aliases: [
     {
@@ -27,7 +29,7 @@ const mattermostIngressIdentity = {
       kind: MATTERMOST_USER_NAME_KIND,
       normalizeEntry: normalizeMattermostAllowEntry,
       normalizeSubject: normalizeMattermostAllowEntry,
-      dangerous: true,
+      authentication: "mutable",
     },
   ],
   isWildcardEntry: (entry) => normalizeMattermostAllowEntry(entry) === "*",
@@ -90,7 +92,7 @@ export function isMattermostSenderAllowed(params: {
   return match.allowed;
 }
 
-export function mapMattermostChannelTypeToChatType(channelType?: string | null): ChatType {
+function mapMattermostChannelTypeToChatType(channelType?: string | null): ChatType {
   const normalized = channelType?.trim().toUpperCase();
   if (!normalized) {
     return "direct";

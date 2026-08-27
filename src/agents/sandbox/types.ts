@@ -79,6 +79,8 @@ export type SandboxConfig = {
   scope: SandboxScope;
   workspaceAccess: SandboxWorkspaceAccess;
   workspaceRoot: string;
+  // Podman must omit only the inherited bare /run tmpfs default; explicit /run is rejected.
+  dockerTmpfsSource: "default" | "configured";
   docker: SandboxDockerConfig;
   ssh: SandboxSshConfig;
   browser: SandboxBrowserConfig;
@@ -94,6 +96,8 @@ export type SandboxBrowserContext = {
 
 export type SandboxContext = {
   enabled: boolean;
+  /** Immutable creator policy: this session may never escape to a host execution target. */
+  required?: true;
   backendId: SandboxBackendId;
   sessionKey: string;
   workspaceDir: string;

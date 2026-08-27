@@ -46,7 +46,7 @@ jobs:
           fi
 
       - name: Checkout selected tag
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ inputs.tag }}
           fetch-depth: 0
@@ -81,7 +81,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout selected tag
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate_release.outputs.tag_sha }}
           persist-credentials: false
@@ -93,6 +93,9 @@ jobs:
             build-essential \
             curl \
             file \
+            gstreamer1.0-libav \
+            gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-good \
             libayatana-appindicator3-dev \
             librsvg2-dev \
             libssl-dev \
@@ -106,8 +109,8 @@ jobs:
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
         with:
+          cache-mode: restore
           install-bun: "false"
-          install-deps: "false"
 
       - name: Build Linux companion bundles
         working-directory: apps/linux/src-tauri
@@ -170,7 +173,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout selected tag
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate_release.outputs.tag_sha }}
           persist-credentials: false
@@ -181,8 +184,8 @@ jobs:
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
         with:
+          cache-mode: restore
           install-bun: "false"
-          install-deps: "false"
 
       - name: Build macOS test bundles
         working-directory: apps/linux/src-tauri
@@ -238,7 +241,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout selected tag
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.validate_release.outputs.tag_sha }}
           persist-credentials: false
@@ -249,8 +252,8 @@ jobs:
       - name: Setup Node environment
         uses: ./.github/actions/setup-node-env
         with:
+          cache-mode: restore
           install-bun: "false"
-          install-deps: "false"
 
       - name: Build Windows test bundle
         working-directory: apps/linux/src-tauri

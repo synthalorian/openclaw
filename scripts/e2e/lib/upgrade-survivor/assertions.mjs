@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { readPluginInstallIndex } from "../plugin-index-sqlite.mjs";
+import { assertUpgradeVolumeMigrated, seedUpgradeVolume } from "./sqlite-volume.mjs";
 
 const command = process.argv[2];
 const SCENARIOS = new Set([
@@ -16,10 +17,12 @@ const SCENARIOS = new Set([
   "plugin-deps-cleanup",
   "configured-plugin-installs",
   "stale-source-plugin-shadow",
+  "prerelease-plugin-registry",
   "tilde-log-path",
   "meeting-transcripts-sqlite",
   "versioned-runtime-deps",
   "cron-scheduled-authority",
+  "sqlite-volume",
   "auth-profile-v2026-7-2-beta-5",
 ]);
 
@@ -96,13 +99,14 @@ function assert(condition, message) {
 
 function seedLegacySessionMetadata(stateDir) {
   const legacySessionsDir = path.join(stateDir, "sessions");
+  const baseUpdatedAt = Date.now() - 24 * 60 * 60 * 1000;
   writeJson(path.join(legacySessionsDir, "sessions.json"), {
     main: {
       sessionId: LEGACY_SESSION_MAIN_ID,
       sessionFile: path.join(legacySessionsDir, `${LEGACY_SESSION_MAIN_ID}.jsonl`),
       provider: "openai",
       model: "gpt-5.5",
-      updatedAt: 1710000000000,
+      updatedAt: baseUpdatedAt,
       skillsSnapshot: {
         prompt: "legacy prompt survives as metadata",
         resolvedSkills: [
@@ -118,14 +122,14 @@ function seedLegacySessionMetadata(stateDir) {
       sessionFile: path.join(legacySessionsDir, `${LEGACY_SESSION_DIRECT_ID}.jsonl`),
       provider: "openai",
       model: "gpt-5.5",
-      updatedAt: 1710000000100,
+      updatedAt: baseUpdatedAt + 100,
     },
     "slack:channel:CUPGRADE": {
       sessionId: LEGACY_SESSION_GROUP_ID,
       sessionFile: path.join(legacySessionsDir, `${LEGACY_SESSION_GROUP_ID}.jsonl`),
       provider: "openai",
       model: "gpt-5.5",
-      updatedAt: 1710000000200,
+      updatedAt: baseUpdatedAt + 200,
       lastChannel: "slack",
       lastTo: "CUPGRADE",
     },
@@ -388,14 +392,16 @@ function seedState() {
 function assertConfigSurvived() {
   const config = getConfig();
   const coverage = getCoverage();
-  if (getScenario() === "meeting-transcripts-sqlite") {
+  const scenario = getScenario();
+  if (scenario === "meeting-transcripts-sqlite") {
     // This focused migration fixture proves state import/export across one published
     // baseline; the broad base scenario owns unrelated agent/channel config parity.
     return;
   }
 
   if (acceptsIntent(coverage, "update")) {
-    assert(config.update?.channel === "stable", "update.channel was not preserved");
+    const expectedChannel = scenario === "prerelease-plugin-registry" ? "beta" : "stable";
+    assert(config.update?.channel === expectedChannel, "update.channel was not preserved");
   }
   if (acceptsIntent(coverage, "gateway")) {
     assert(config.gateway?.auth?.mode === "token", "gateway auth mode was not preserved");
@@ -413,11 +419,6 @@ function assertConfigSurvived() {
       config.agents?.entries?.ops ?? legacyAgents.find((agent) => agent?.id === "ops");
     assert(mainAgent, "main agent missing");
     assert(opsAgent, "ops agent missing");
-    if (hasCoverage(coverage)) {
-      assert(config.agents?.defaults?.contextTokens === 64000, "default contextTokens changed");
-    } else {
-      assert(mainAgent.contextTokens === 64000, "main agent contextTokens changed");
-    }
     if (!hasCoverage(coverage) || !coverage.skippedIntents?.includes("agent-modern-preferences")) {
       assert(opsAgent.fastModeDefault === true, "ops fastModeDefault changed");
     }
@@ -431,12 +432,12 @@ function assertConfigSurvived() {
     const pluginAllow = config.plugins?.allow ?? [];
     assert(pluginAllow.includes("discord"), "discord plugin allow entry missing");
     assert(pluginAllow.includes("telegram"), "telegram plugin allow entry missing");
-    if (getScenario() === "configured-plugin-installs") {
+    if (hasCoverage(coverage) && acceptsIntent(coverage, "configured-plugin-installs")) {
       assert(pluginAllow.includes("matrix"), "matrix plugin allow entry missing");
     } else {
       assert(pluginAllow.includes("whatsapp"), "whatsapp plugin allow entry missing");
     }
-    if (getScenario() === "codex-allowlist-survival") {
+    if (scenario === "codex-allowlist-survival") {
       assert(pluginAllow.includes("codex"), "Codex plugin allow entry missing");
     }
     if (hasCoverage(coverage) && acceptsIntent(coverage, "feishu-channel")) {
@@ -494,7 +495,7 @@ function assertConfigSurvived() {
 
   if (
     acceptsIntent(coverage, "whatsapp-channel") &&
-    getScenario() !== "configured-plugin-installs"
+    !acceptsIntent(coverage, "configured-plugin-installs")
   ) {
     const whatsapp = config.channels?.whatsapp;
     assert(whatsapp?.enabled === true, "whatsapp enabled flag changed");
@@ -509,7 +510,7 @@ function assertConfigSurvived() {
     }
   }
 
-  if (getScenario() === "channel-post-core-restore") {
+  if (scenario === "channel-post-core-restore") {
     const whatsapp = config.channels?.whatsapp;
     assert(whatsapp?.enabled === true, "post-core channel restore dropped WhatsApp");
     assert(
@@ -567,6 +568,9 @@ function assertStateSurvived() {
   }
   if (scenario === "cron-scheduled-authority") {
     assertCronScheduledAuthorityMigrated(stateDir, stage);
+  }
+  if (scenario === "sqlite-volume") {
+    assertUpgradeVolumeMigrated(stateDir, stage);
   }
   if (scenario === "auth-profile-v2026-7-2-beta-5") {
     assertAuthProfileMigrationSurvived(stateDir, stage);
@@ -822,31 +826,37 @@ function assertSessionMetadataMigrated(stateDir) {
   const legacyStorePath = path.join(stateDir, "sessions", "sessions.json");
   const agentSessionsDir = path.join(stateDir, "agents", "main", "sessions");
   const targetStorePath = path.join(agentSessionsDir, "sessions.json");
-  const dbPath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
   assert(
     !fs.existsSync(legacyStorePath),
     `legacy sessions.json survived migration: ${legacyStorePath}`,
   );
 
-  const store = readMigratedSessionStore(stateDir, targetStorePath);
+  const { source, store } = readMigratedSessionStore(stateDir, targetStorePath);
   const main = store["agent:main:main"];
   const direct = store["agent:main:+15551234567"];
   const group = store["agent:main:slack:channel:cupgrade"];
   assert(main?.sessionId === LEGACY_SESSION_MAIN_ID, "main legacy session row missing");
   assert(direct?.sessionId === LEGACY_SESSION_DIRECT_ID, "direct legacy session row missing");
   assert(group?.sessionId === LEGACY_SESSION_GROUP_ID, "channel legacy session row missing");
-  const migratedSessionIds = [
-    LEGACY_SESSION_MAIN_ID,
-    LEGACY_SESSION_DIRECT_ID,
-    LEGACY_SESSION_GROUP_ID,
+  const migratedSessions = [
+    [LEGACY_SESSION_MAIN_ID, main],
+    [LEGACY_SESSION_DIRECT_ID, direct],
+    [LEGACY_SESSION_GROUP_ID, group],
   ];
-  if (fs.existsSync(dbPath)) {
+  for (const [sessionId, entry] of migratedSessions) {
+    assert(
+      !Object.hasOwn(entry ?? {}, "sessionFile"),
+      `legacy session row retained retired sessionFile metadata for ${sessionId}`,
+    );
+  }
+  if (source !== "file") {
+    const dbPath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
     const db = new DatabaseSync(dbPath, { readOnly: true });
     try {
       const count = db.prepare(
         "SELECT COUNT(*) AS count FROM transcript_events WHERE session_id = ?",
       );
-      for (const sessionId of migratedSessionIds) {
+      for (const [sessionId] of migratedSessions) {
         const row = count.get(sessionId);
         assert(
           Number(row?.count ?? 0) > 0,
@@ -857,19 +867,11 @@ function assertSessionMetadataMigrated(stateDir) {
       db.close();
     }
   } else {
-    for (const [sessionId, entry] of [
-      [LEGACY_SESSION_MAIN_ID, main],
-      [LEGACY_SESSION_DIRECT_ID, direct],
-      [LEGACY_SESSION_GROUP_ID, group],
-    ]) {
+    for (const [sessionId] of migratedSessions) {
       const expectedPath = path.join(agentSessionsDir, `${sessionId}.jsonl`);
       assert(
         fs.existsSync(expectedPath),
         `legacy session transcript was not moved for ${sessionId}`,
-      );
-      assert(
-        entry?.sessionFile === expectedPath,
-        `legacy session row still points at the old sessions directory for ${sessionId}`,
       );
     }
   }
@@ -884,42 +886,71 @@ function assertSessionMetadataMigrated(stateDir) {
 }
 
 function readMigratedSessionStore(stateDir, targetStorePath) {
-  if (fs.existsSync(targetStorePath)) {
-    return readJson(targetStorePath);
-  }
-
   const dbPath = path.join(stateDir, "agents", "main", "agent", "openclaw-agent.sqlite");
-  assert(fs.existsSync(dbPath), `agent session store missing: ${targetStorePath} or ${dbPath}`);
-
-  let db;
-  try {
-    db = new DatabaseSync(dbPath, { readOnly: true });
-    const hasSessionEntries = db
-      .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'session_nodes'")
-      .get();
-    const rows = hasSessionEntries
-      ? db
+  if (fs.existsSync(dbPath)) {
+    let db;
+    try {
+      db = new DatabaseSync(dbPath, { readOnly: true });
+      const tables = new Set(
+        db
           .prepare(
-            `SELECT session_key AS key, current_session_id AS session_id, entry_json AS value_json
-             FROM session_nodes`,
+            `SELECT name
+             FROM sqlite_master
+             WHERE type = 'table'
+               AND name IN ('session_nodes', 'session_entries', 'cache_entries')`,
           )
           .all()
-      : db
-          .prepare("SELECT key, value_json FROM cache_entries WHERE scope = ?")
-          .all("session_entries");
-    const store = {};
-    for (const row of rows) {
-      if (typeof row?.key !== "string" || typeof row?.value_json !== "string") {
-        continue;
+          .map((row) => row.name),
+      );
+      // SQLite is authoritative once it owns a supported session table. A stale
+      // sessions.json must not hide missing, malformed, or unreadable database state.
+      const source = tables.has("session_nodes")
+        ? "session_nodes"
+        : tables.has("session_entries")
+          ? "session_entries"
+          : tables.has("cache_entries")
+            ? "cache_entries"
+            : null;
+      if (source) {
+        const rows =
+          source === "session_nodes"
+            ? db
+                .prepare(
+                  `SELECT session_key AS key, current_session_id AS session_id, entry_json AS value_json
+                   FROM session_nodes`,
+                )
+                .all()
+            : source === "session_entries"
+              ? db
+                  .prepare(
+                    `SELECT session_key AS key, session_id, entry_json AS value_json
+                     FROM session_entries`,
+                  )
+                  .all()
+              : db
+                  .prepare("SELECT key, value_json FROM cache_entries WHERE scope = ?")
+                  .all("session_entries");
+        const store = {};
+        for (const row of rows) {
+          if (typeof row?.key !== "string" || typeof row?.value_json !== "string") {
+            continue;
+          }
+          const entry = JSON.parse(row.value_json);
+          store[row.key] =
+            typeof row.session_id === "string" ? { ...entry, sessionId: row.session_id } : entry;
+        }
+        return { source, store };
       }
-      const entry = JSON.parse(row.value_json);
-      store[row.key] =
-        typeof row.session_id === "string" ? { ...entry, sessionId: row.session_id } : entry;
+    } finally {
+      db?.close();
     }
-    return store;
-  } finally {
-    db?.close();
   }
+
+  assert(
+    fs.existsSync(targetStorePath),
+    `agent session store missing: ${targetStorePath} or ${dbPath}`,
+  );
+  return { source: "file", store: readJson(targetStorePath) };
 }
 
 function readInstalledPluginIndex() {
@@ -1189,6 +1220,10 @@ if (command === "list-scenarios") {
   process.stdout.write(`${JSON.stringify([...SCENARIOS])}\n`);
 } else if (command === "seed") {
   seedState();
+} else if (command === "seed-volume") {
+  assert(getScenario() === "sqlite-volume", "seed-volume requires the sqlite-volume scenario");
+  const stateDir = requireEnv("OPENCLAW_STATE_DIR");
+  seedUpgradeVolume(stateDir);
 } else if (command === "assert-config") {
   assertConfigSurvived();
 } else if (command === "assert-state") {

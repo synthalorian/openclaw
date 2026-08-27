@@ -15,7 +15,8 @@ Once enabled, it serves all of these on the same port as the Gateway (WS + HTTP 
 | GET    | `/v1/models`           |
 | GET    | `/v1/models/{id}`      |
 | POST   | `/v1/embeddings`       |
-| POST   | `/v1/responses`        |
+
+`POST /v1/responses` is enabled separately with `gateway.http.endpoints.responses.enabled`. See [OpenResponses API](/gateway/openresponses-http-api).
 
 Requests run as a normal Gateway agent run (same codepath as `openclaw agent`), so routing, permissions, and config match your Gateway.
 
@@ -159,20 +160,20 @@ Security note: allowlisting a hostname does not bypass private/internal IP block
 
 ### Supported request fields
 
-| Field                      | Notes                                                                                                                                         |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tools`                    | Array of `{ "type": "function", "function": { ... } }`                                                                                        |
-| `tool_choice`              | `"auto"`, `"none"`, `"required"`, or `{ "type": "function", "function": { "name": "..." } }`                                                  |
-| `messages[*].role: "tool"` | Follow-up turns                                                                                                                               |
-| `messages[*].tool_call_id` | Binds a tool result back to a prior tool call                                                                                                 |
-| `max_completion_tokens`    | Number; per-call cap on total completion tokens (reasoning tokens included). Current field name; used when both it and `max_tokens` are sent. |
-| `max_tokens`               | Number; legacy alias, ignored when `max_completion_tokens` is also present.                                                                   |
-| `temperature`              | Number 0-2; best-effort, forwarded to the upstream provider. `400 invalid_request_error` if out of range.                                     |
-| `top_p`                    | Number 0-1; best-effort. `400 invalid_request_error` if out of range.                                                                         |
-| `frequency_penalty`        | Number -2.0 to 2.0; best-effort. `400 invalid_request_error` if out of range.                                                                 |
-| `presence_penalty`         | Number -2.0 to 2.0; best-effort. `400 invalid_request_error` if out of range.                                                                 |
-| `seed`                     | Integer; best-effort. `400 invalid_request_error` for non-integer values.                                                                     |
-| `stop`                     | String or array of up to 4 strings; best-effort. `400 invalid_request_error` for more than 4 sequences or non-string/empty entries.           |
+| Field                      | Notes                                                                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tools`                    | Array of `{ "type": "function", "function": { ... } }`                                                                                                                               |
+| `tool_choice`              | `"auto"`, `"none"`, `"required"`, or `{ "type": "function", "function": { "name": "..." } }`                                                                                         |
+| `messages[*].role: "tool"` | Follow-up turns                                                                                                                                                                      |
+| `messages[*].tool_call_id` | Binds a tool result back to a prior tool call                                                                                                                                        |
+| `max_completion_tokens`    | Positive safe integer; per-call cap on total completion tokens (reasoning tokens included). Current field name; used when both fields are non-null. Null or omitted leaves it unset. |
+| `max_tokens`               | Positive safe integer; legacy alias. It is still validated when `max_completion_tokens` is non-null, then ignored for precedence. Null or omitted leaves it unset.                   |
+| `temperature`              | Number 0-2; best-effort, forwarded to the upstream provider. `400 invalid_request_error` if out of range.                                                                            |
+| `top_p`                    | Number 0-1; best-effort. `400 invalid_request_error` if out of range.                                                                                                                |
+| `frequency_penalty`        | Number -2.0 to 2.0; best-effort. `400 invalid_request_error` if out of range.                                                                                                        |
+| `presence_penalty`         | Number -2.0 to 2.0; best-effort. `400 invalid_request_error` if out of range.                                                                                                        |
+| `seed`                     | Integer; best-effort. `400 invalid_request_error` for non-integer values.                                                                                                            |
+| `stop`                     | String or array of up to 4 strings; best-effort. `400 invalid_request_error` for more than 4 sequences or non-string/empty entries.                                                  |
 
 All sampling and token-cap fields ride the same agent stream-param channel and are forwarded best-effort:
 

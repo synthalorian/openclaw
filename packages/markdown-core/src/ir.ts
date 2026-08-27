@@ -1,9 +1,11 @@
 // Markdown Core module implements ir behavior.
-import MarkdownIt from "markdown-it";
+import { avoidTrailingHighSurrogateBreak } from "@openclaw/normalization-core/utf16-slice";
+import MarkdownIt, {
+  type MarkdownIt as MarkdownItParser,
+  type StateCore,
+  type StateInline,
+} from "markdown-it";
 import markdownItCjkFriendly from "markdown-it-cjk-friendly";
-import { HTML_TAG_RE } from "markdown-it/lib/common/html_re.mjs";
-import type StateCore from "markdown-it/lib/rules_core/state_core.mjs";
-import type StateInline from "markdown-it/lib/rules_inline/state_inline.mjs";
 import { visibleWidth } from "../../terminal-core/src/ansi.js";
 import {
   ASSISTANT_TRANSCRIPT_ROLE_NODE_TYPE,
@@ -12,7 +14,7 @@ import {
   type AssistantTranscriptRoleTokenMeta,
 } from "./assistant-transcript.js";
 import { chunkText } from "./chunk-text.js";
-import { tokenizeHtmlTags } from "./html-tags.js";
+import { matchMarkdownHtmlTag, tokenizeHtmlTags } from "./html-tags.js";
 import {
   appendAssistantTranscriptRoleImage,
   appendAssistantTranscriptRoleText,
@@ -268,6 +270,11 @@ export type MarkdownParseOptions = {
   horizontalRuleText?: string;
   /** Preserve source line spacing after headings and code blocks. */
   preserveSourceBlockSpacing?: boolean;
+  /**
+   * Treat Python-style `__name__` member, call, argument, and index identifiers as literal text
+   * instead of emphasis delimiters. Disabled by default.
+   */
+  preserveDunderIdentifiers?: boolean;
 };
 
 function appendHeadingSeparator(state: RenderState, nextBlockStart: number | undefined) {
@@ -286,15 +293,23 @@ function appendHeadingSeparator(state: RenderState, nextBlockStart: number | und
   state.headingLineEnd = undefined;
 }
 
-function createMarkdownIt(options: MarkdownParseOptions): MarkdownIt {
+function createMarkdownIt(options: MarkdownParseOptions): MarkdownItParser {
   const md = new MarkdownIt({
     html: false,
     linkify: options.linkify ?? true,
     breaks: false,
     typographer: false,
   });
+  md.linkify.set({ fuzzyLink: true });
   md.use(markdownItCjkFriendly);
   md.use(markdownItAssistantTranscriptRoles);
+  if (options.preserveDunderIdentifiers) {
+    md.inline.ruler.before(
+      "emphasis",
+      "markdown_core_dunder_identifiers",
+      preserveDunderIdentifier,
+    );
+  }
   if (options.enableTaskLists) {
     md.core.ruler.before("inline", "markdown_core_task_lists", protectTaskListMarkers);
   }
@@ -319,6 +334,32 @@ function createMarkdownIt(options: MarkdownParseOptions): MarkdownIt {
     md.disable("autolink");
   }
   return md;
+}
+
+function preserveDunderIdentifier(state: StateInline, silent: boolean): boolean {
+  const match = /^__[\p{L}_][\p{L}\p{N}_]*__/u.exec(state.src.slice(state.pos, state.posMax));
+  if (!match) {
+    return false;
+  }
+  const identifier = match[0];
+  const end = state.pos + identifier.length;
+  const before = state.src[state.pos - 1];
+  const beforeBefore = state.src[state.pos - 2];
+  const after = end < state.posMax ? state.src[end] : undefined;
+  const member = before === ".";
+  const call = after === "(";
+  const functionArgument = before === "(" && /[\p{L}\p{N}_]/u.test(beforeBefore ?? "");
+  const index = after === "[";
+  if (!member && !call && !functionArgument && !index) {
+    return false;
+  }
+  // markdown-it also invokes matching rules silently while scanning labels;
+  // both modes must consume the same source span.
+  if (!silent) {
+    state.push("text", "", 0).content = identifier;
+  }
+  state.pos = end;
+  return true;
 }
 
 function protectTaskListMarkers(state: StateCore): void {
@@ -354,7 +395,7 @@ function parseHtmlUnderline(state: StateInline, silent: boolean): boolean {
   if (state.src.charCodeAt(state.pos) !== 0x3c) {
     return false;
   }
-  const raw = HTML_TAG_RE.exec(state.src.slice(state.pos))?.[0];
+  const raw = matchMarkdownHtmlTag(state.src.slice(state.pos));
   if (!raw) {
     return false;
   }
@@ -1447,14 +1488,44 @@ function sliceListMarker(
 }
 
 export function sliceMarkdownIR(ir: MarkdownIR, start: number, end: number): MarkdownIR {
+  const textLength = ir.text.length;
+  const integerStart = Math.trunc(start) || 0;
+  const integerEnd = Math.trunc(end) || 0;
+  let normalizedStart =
+    integerStart < 0 ? Math.max(textLength + integerStart, 0) : Math.min(integerStart, textLength);
+  let normalizedEnd =
+    integerEnd < 0 ? Math.max(textLength + integerEnd, 0) : Math.min(integerEnd, textLength);
+
+  if (normalizedStart < normalizedEnd) {
+    // Normalize once so text, formatting, links, and structural metadata share
+    // the same complete-code-point boundaries.
+    const safeStart = avoidTrailingHighSurrogateBreak(ir.text, 0, normalizedStart);
+    if (safeStart !== normalizedStart) {
+      normalizedStart = safeStart < normalizedStart ? safeStart : normalizedStart - 1;
+    }
+
+    const safeEnd = avoidTrailingHighSurrogateBreak(ir.text, 0, normalizedEnd);
+    if (safeEnd !== normalizedEnd) {
+      normalizedEnd = safeEnd > normalizedEnd ? safeEnd : normalizedEnd + 1;
+    }
+  }
+
   const metadataIR = ir as MarkdownIRWithMetadata;
-  const annotations = sliceAnnotationSpans(ir.annotations ?? [], start, end);
+  const annotations = sliceAnnotationSpans(ir.annotations ?? [], normalizedStart, normalizedEnd);
   const listItems = ((ir.listItems ?? []) as MarkdownListItemWithMetadata[]).flatMap((item) => {
-    const listMarker = item.listMarker ? sliceListMarker(item.listMarker, start, end) : undefined;
-    const taskMarker = item.taskMarker ? sliceListMarker(item.taskMarker, start, end) : undefined;
+    const listMarker = item.listMarker
+      ? sliceListMarker(item.listMarker, normalizedStart, normalizedEnd)
+      : undefined;
+    const taskMarker = item.taskMarker
+      ? sliceListMarker(item.taskMarker, normalizedStart, normalizedEnd)
+      : undefined;
     const content =
       item.contentStart !== undefined && item.contentEnd !== undefined
-        ? sliceListMarker({ start: item.contentStart, end: item.contentEnd }, start, end)
+        ? sliceListMarker(
+            { start: item.contentStart, end: item.contentEnd },
+            normalizedStart,
+            normalizedEnd,
+          )
         : undefined;
     return listMarker || taskMarker
       ? [
@@ -1467,8 +1538,12 @@ export function sliceMarkdownIR(ir: MarkdownIR, start: number, end: number): Mar
               ...(item.listId !== undefined ? { listId: item.listId } : {}),
               ...(item.parentListId !== undefined ? { parentListId: item.parentListId } : {}),
               ...(item.depth !== undefined ? { depth: item.depth } : {}),
-              ...(item.start !== undefined ? { start: Math.max(item.start, start) - start } : {}),
-              ...(item.end !== undefined ? { end: Math.min(item.end, end) - start } : {}),
+              ...(item.start !== undefined
+                ? { start: Math.max(item.start, normalizedStart) - normalizedStart }
+                : {}),
+              ...(item.end !== undefined
+                ? { end: Math.min(item.end, normalizedEnd) - normalizedStart }
+                : {}),
             },
             {
               ...(content ? { contentStart: content.start, contentEnd: content.end } : {}),
@@ -1486,18 +1561,20 @@ export function sliceMarkdownIR(ir: MarkdownIR, start: number, end: number): Mar
   const blocks = (metadataIR.blocks ?? []).flatMap((block) => {
     if (block.start === block.end) {
       const containsPoint =
-        start === end ? block.start === start : block.start >= start && block.start < end;
+        normalizedStart === normalizedEnd
+          ? block.start === normalizedStart
+          : block.start >= normalizedStart && block.start < normalizedEnd;
       return containsPoint
-        ? [{ ...block, start: block.start - start, end: block.end - start }]
+        ? [{ ...block, start: block.start - normalizedStart, end: block.end - normalizedStart }]
         : [];
     }
-    const sliced = sliceListMarker(block, start, end);
+    const sliced = sliceListMarker(block, normalizedStart, normalizedEnd);
     return sliced ? [{ ...block, ...sliced }] : [];
   });
   const sliced: MarkdownIR = {
-    text: ir.text.slice(start, end),
-    styles: sliceStyleSpans(ir.styles, start, end),
-    links: sliceLinkSpans(ir.links, start, end),
+    text: ir.text.slice(normalizedStart, normalizedEnd),
+    styles: sliceStyleSpans(ir.styles, normalizedStart, normalizedEnd),
+    links: sliceLinkSpans(ir.links, normalizedStart, normalizedEnd),
     ...(annotations.length > 0 ? { annotations } : {}),
     ...(listItems.length > 0 ? { listItems } : {}),
   };
@@ -1541,7 +1618,7 @@ export function markdownToIRWithMeta(
     assistantTranscriptRolePreserveLinks: options.assistantTranscriptRoleHeaders === true,
   };
   const md = createMarkdownIt(options);
-  const tokens = md.parse(source, env as unknown as object);
+  const tokens = md.parse(source, env);
 
   const tableMode = options.tableMode ?? "off";
 

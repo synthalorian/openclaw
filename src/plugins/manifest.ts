@@ -7,11 +7,17 @@ import { normalizeTrimmedStringList } from "../../packages/normalization-core/sr
 import { matchRootFileOpenFailure, openRootFileSync } from "../infra/boundary-file-read.js";
 import { isRecord } from "../utils.js";
 import { parseJsonWithJson5Fallback } from "../utils/parse-json-compat.js";
+import { coerceDoctorSessionRouteStateOwners } from "./doctor-session-route-state-owner-types.js";
 import * as capabilityNormalizers from "./manifest-capability-normalizers.js";
 import { normalizeManifestCommandAliases } from "./manifest-command-aliases.js";
 import * as modelProviderNormalizers from "./manifest-model-provider-normalizers.js";
 import * as setupNormalizers from "./manifest-setup-normalizers.js";
-import type { PluginManifest } from "./manifest-types.js";
+import type {
+  PluginDiagnosticCode,
+  PluginManifest,
+  PluginManifestBackupResource,
+  PluginManifestDoctorContract,
+} from "./manifest-types.js";
 import { createPluginCacheKey, PluginLruCache } from "./plugin-cache-primitives.js";
 import type { PluginKind } from "./plugin-kind.types.js";
 import { normalizePluginPolicyId } from "./plugin-policy-id.js";
@@ -29,6 +35,7 @@ const PLUGIN_MANIFEST_FILENAMES = [PLUGIN_MANIFEST_FILENAME] as const;
 const MAX_PLUGIN_MANIFEST_BYTES = 256 * 1024;
 const MAX_PLUGIN_MANIFEST_LOAD_CACHE_ENTRIES = 512;
 const CORE_RESERVED_PLUGIN_IDS = new Set(["node-mcp"]);
+const VALID_PLUGIN_KINDS: ReadonlySet<string> = new Set<PluginKind>(["memory", "context-engine"]);
 
 export function isCoreReservedPluginId(id: string): boolean {
   return CORE_RESERVED_PLUGIN_IDS.has(normalizePluginPolicyId(id));
@@ -36,7 +43,12 @@ export function isCoreReservedPluginId(id: string): boolean {
 
 type PluginManifestLoadResult =
   | { ok: true; manifest: PluginManifest; manifestPath: string }
-  | { ok: false; error: string; manifestPath: string };
+  | {
+      ok: false;
+      error: string;
+      manifestPath: string;
+      diagnosticCode?: PluginDiagnosticCode;
+    };
 
 type PluginManifestLoadCacheEntry = {
   result: PluginManifestLoadResult;
@@ -109,13 +121,74 @@ function setCachedPluginManifestLoadResult(
 }
 
 function parsePluginKind(raw: unknown): PluginKind | PluginKind[] | undefined {
-  if (typeof raw === "string") {
-    return raw as PluginKind;
+  const values = typeof raw === "string" ? [raw] : Array.isArray(raw) ? raw : [];
+  const kinds: PluginKind[] = [];
+  for (const value of values) {
+    if (typeof value !== "string" || !VALID_PLUGIN_KINDS.has(value)) {
+      continue;
+    }
+    const kind = value as PluginKind;
+    if (!kinds.includes(kind)) {
+      kinds.push(kind);
+    }
   }
-  if (Array.isArray(raw) && raw.length > 0 && raw.every((k) => typeof k === "string")) {
-    return raw.length === 1 ? (raw[0] as PluginKind) : (raw as PluginKind[]);
+  return kinds.length === 0 ? undefined : kinds.length === 1 ? kinds[0] : kinds;
+}
+
+function parseManifestBackupResources(
+  raw: unknown,
+): { ok: true; resources?: PluginManifestBackupResource[] } | { ok: false; error: string } {
+  if (raw === undefined) {
+    return { ok: true };
   }
-  return undefined;
+  if (!Array.isArray(raw)) {
+    return { ok: false, error: "backupResources must be an array" };
+  }
+  const resources = new Map<string, PluginManifestBackupResource>();
+  for (const [index, entry] of raw.entries()) {
+    if (
+      !isRecord(entry) ||
+      Object.keys(entry).length !== 3 ||
+      !("disposition" in entry) ||
+      !("scope" in entry) ||
+      !("relativePath" in entry)
+    ) {
+      return {
+        ok: false,
+        error: `backupResources[${index}] must contain only disposition, scope, and relativePath`,
+      };
+    }
+    const { disposition, scope, relativePath } = entry;
+    if (disposition !== "include" && disposition !== "regenerable") {
+      return { ok: false, error: `backupResources[${index}].disposition is invalid` };
+    }
+    if (scope !== "state" && scope !== "agent") {
+      return { ok: false, error: `backupResources[${index}].scope is invalid` };
+    }
+    if (
+      typeof relativePath !== "string" ||
+      !relativePath ||
+      relativePath.includes("\\") ||
+      relativePath.includes("\0") ||
+      path.posix.isAbsolute(relativePath) ||
+      path.win32.isAbsolute(relativePath) ||
+      /^[A-Za-z][A-Za-z\d+.-]*:/.test(relativePath) ||
+      relativePath.split("/").some((segment) => !segment || segment === "." || segment === "..")
+    ) {
+      return {
+        ok: false,
+        error: `backupResources[${index}].relativePath must be a strict relative POSIX path`,
+      };
+    }
+    const resource: PluginManifestBackupResource = { disposition, scope, relativePath };
+    resources.set(`${scope}\0${relativePath}\0${disposition}`, resource);
+  }
+  return {
+    ok: true,
+    resources: [...resources.entries()]
+      .toSorted(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+      .map(([, resource]) => resource),
+  };
 }
 
 export function loadPluginManifest(
@@ -192,6 +265,15 @@ export function loadPluginManifest(
   if (!configSchema) {
     return cacheResult({ ok: false, error: "plugin manifest requires configSchema", manifestPath });
   }
+  const backupResources = parseManifestBackupResources(raw.backupResources);
+  if (!backupResources.ok) {
+    return cacheResult({
+      ok: false,
+      error: `invalid plugin manifest backupResources: ${backupResources.error}`,
+      manifestPath,
+      diagnosticCode: "backup-resource-declaration-invalid",
+    });
+  }
 
   const requiresPlugins = normalizeTrimmedStringList(raw.requiresPlugins);
   const enabledByDefaultOnPlatforms = setupNormalizers.normalizeManifestDefaultPlatforms(
@@ -203,9 +285,25 @@ export function loadPluginManifest(
   );
   const providers = normalizeTrimmedStringList(raw.providers);
   const cliBackends = normalizeTrimmedStringList(raw.cliBackends);
+  const rawDoctorContract = isRecord(raw.doctorContract) ? raw.doctorContract : undefined;
+  const doctorContract = rawDoctorContract
+    ? (Object.fromEntries(
+        [
+          "configRepair",
+          "resolveSessionStoreAgentIds",
+          "sessionRouteStateOwners",
+          "stateMigrations",
+        ].flatMap((key) =>
+          typeof rawDoctorContract[key] === "boolean" ? [[key, rawDoctorContract[key]]] : [],
+        ),
+      ) as PluginManifestDoctorContract)
+    : undefined;
   const manifestBeforeDashboard = {
     id,
     configSchema,
+    ...(backupResources.resources !== undefined
+      ? { backupResources: backupResources.resources }
+      : {}),
     ...(requiresPlugins.length > 0 ? { requiresPlugins } : {}),
     ...(raw.enabledByDefault === true ? { enabledByDefault: true } : {}),
     ...(enabledByDefaultOnPlatforms.length > 0 ? { enabledByDefaultOnPlatforms } : {}),
@@ -241,13 +339,21 @@ export function loadPluginManifest(
     syntheticAuthRefs: normalizeTrimmedStringList(raw.syntheticAuthRefs),
     nonSecretAuthMarkers: normalizeTrimmedStringList(raw.nonSecretAuthMarkers),
     commandAliases: normalizeManifestCommandAliases(raw.commandAliases),
+    cliCommands: setupNormalizers.normalizeManifestCliCommands(raw.cliCommands),
     providerUsageAuthEnvVars: capabilityNormalizers.normalizeStringListRecord(
       raw.providerUsageAuthEnvVars,
     ),
-    providerAuthAliases: capabilityNormalizers.normalizeStringRecord(raw.providerAuthAliases),
+    providerAuthAliases: capabilityNormalizers.normalizeManifestStringRecord(
+      raw.providerAuthAliases,
+    ),
     providerAuthChoices: setupNormalizers.normalizeProviderAuthChoices(raw.providerAuthChoices),
     activation: setupNormalizers.normalizeManifestActivation(raw.activation),
     setup: setupNormalizers.normalizeManifestSetup(raw.setup),
+    doctorContract,
+    sessionRouteStateOwners:
+      raw.sessionRouteStateOwners === undefined
+        ? undefined
+        : coerceDoctorSessionRouteStateOwners(raw.sessionRouteStateOwners),
     qaRunners: setupNormalizers.normalizeManifestQaRunners(raw.qaRunners),
   };
   const dashboardResult = setupNormalizers.normalizeManifestDashboard(raw.dashboard);
